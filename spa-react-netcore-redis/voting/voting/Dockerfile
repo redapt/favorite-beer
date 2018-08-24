@@ -13,12 +13,13 @@ COPY voting/voting.csproj voting/
 RUN dotnet restore voting/voting.csproj
 COPY . .
 WORKDIR /src/voting
-RUN dotnet build voting.csproj -c Debug -o /app
+RUN dotnet build voting.csproj -c Release -o /app
 
 FROM build AS publish
-RUN dotnet publish voting.csproj -c Debug -o /app
+RUN dotnet publish voting.csproj -c Release -o /app
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
+EXPOSE 80
 ENTRYPOINT ["dotnet", "voting.dll"]

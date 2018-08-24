@@ -6,3 +6,5 @@ services:
     build:
       context: .
       dockerfile: voting/Dockerfile
+    ports: 
+      - '80:80'
