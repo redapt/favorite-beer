@@ -6,5 +6,15 @@ services:
     build:
       context: .
       dockerfile: voting/Dockerfile
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
     ports: 
       - '80:80'
+  redis:
+    image: "redis:3.2-alpine"
+    volumes:
+      - redis_data:/data
+volumes:
+  redis_data:
