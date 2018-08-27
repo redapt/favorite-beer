@@ -2,7 +2,6 @@
 import { Link } from 'react-router-dom';
 import { Glyphicon, Nav, Navbar, NavItem } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
-import './NavMenu.css';
 
 export class NavMenu extends Component {
   displayName = NavMenu.name
@@ -12,7 +11,7 @@ export class NavMenu extends Component {
       <Navbar inverse fixedTop fluid collapseOnSelect>
         <Navbar.Header>
           <Navbar.Brand>
-            <Link to={'/'}>voting</Link>
+            <Link to={'/'}><img src="/Redapt-Red-White.svg" height="30" /></Link>
           </Navbar.Brand>
           <Navbar.Toggle />
         </Navbar.Header>

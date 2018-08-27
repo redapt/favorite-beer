@@ -1,4 +1,4 @@
-﻿.navbar li .glyphicon {
+.navbar li .glyphicon {
     margin-right: 10px;
 }
 
@@ -55,4 +55,12 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
+}
+
+.navbar .container-fluid .navbar-brand {
+    padding: 10px 15px;
+}
+
+.container-fluid>.navbar-header {
+    background-color: #353637;
 }
