@@ -5,13 +5,13 @@ export class Home extends Component {
 
   constructor(props) {
     super(props);
-    this.state = { forecasts: [], loading: true, beer_loading: true, beers: [] };
+    this.state = { beer_loading: true, beers: [] };
     this.incrementCounter = this.incrementCounter.bind(this);
 
     fetch('api/Vote/options')
       .then(response => response.json())
       .then(data => {
-        this.setState({ forecasts: this.state.forecasts, beer_loading: false, loading: this.state.loading, beers: data });
+        this.setState({ beer_loading: false, beers: data });
       });
   }
 
@@ -21,8 +21,6 @@ export class Home extends Component {
       beers[index].currentCount = beers[index].currentCount + 1
     }
     this.setState({
-      forecasts: this.state.forecasts, 
-      loading: this.state.loading, 
       beer_loading: this.state.beer_loading, 
       beers: beers
     });
