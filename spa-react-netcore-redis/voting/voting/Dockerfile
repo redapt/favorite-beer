@@ -6,7 +6,7 @@ FROM microsoft/dotnet:2.1-sdk AS build
 # Install Node.js
 RUN apt-get install --yes curl
 RUN curl --silent  --location https://deb.nodesource.com/setup_8.x |  bash -
-RUN apt-get install --yes nodejs
+RUN apt-get install --yes nodejs && npm install node-sass
 RUN apt-get install --yes build-essential
 WORKDIR /src
 COPY voting/voting.csproj voting/
