@@ -8,3 +8,5 @@ services:
       dockerfile: voting/Dockerfile
     ports: 
       - '80:80'
+  redis:
+    image: "redis:alpine"
