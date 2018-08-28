@@ -21,5 +21,6 @@ RUN dotnet publish voting.csproj -c Release -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
+
 EXPOSE 80
 ENTRYPOINT ["dotnet", "voting.dll"]

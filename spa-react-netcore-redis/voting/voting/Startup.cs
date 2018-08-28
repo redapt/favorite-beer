@@ -24,6 +24,8 @@ namespace voting
 
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration => { configuration.RootPath = "ClientApp/build"; });
+
+            services.AddDistributedRedisCache(options => { options.Configuration = "redis:6379"; });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
