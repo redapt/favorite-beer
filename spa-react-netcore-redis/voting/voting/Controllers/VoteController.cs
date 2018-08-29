@@ -28,9 +28,33 @@ namespace voting.Controllers
             return Enumerable.Range(0, 3).Select(index => new Beer
             {
                 Name = BeerData[index],
-                CurrentCount = 0
+                CurrentCount = int.Parse(System.Text.Encoding.UTF8.GetString(_distributedCache.Get(BeerData[index]) ?? System.Text.Encoding.UTF8.GetBytes("0")))
             });
         }
+
+        [HttpGet("[action]/{id}")]
+        public ActionResult<Beer> options(string id)
+        {
+            var index = Array.IndexOf(BeerData, id);
+            if(index >= 0)
+            {
+                int count = int.Parse(System.Text.Encoding.UTF8.GetString(_distributedCache.Get(BeerData[index]) ?? System.Text.Encoding.UTF8.GetBytes("0"))) + 1;
+                var cacheOptions = new DistributedCacheEntryOptions {  
+                    AbsoluteExpiration = DateTime.Now.AddYears(10)  
+                };
+                _distributedCache.Set(BeerData[index], System.Text.Encoding.UTF8.GetBytes(count.ToString()), cacheOptions);
+                return new Beer
+                {
+                    Name = BeerData[index],
+                    CurrentCount = count
+                };
+            } 
+            else 
+            {
+                return NotFound();
+            }
+        }
+
 
         public class Beer
         {

@@ -18,12 +18,16 @@ export class Home extends Component {
   incrementCounter(index) {
     var beers = this.state.beers;
     if(index != null && beers != null && beers[index] != null){
-      beers[index].currentCount = beers[index].currentCount + 1
+      fetch('api/Vote/options/'+beers[index].name)
+        .then(response => response.json())
+        .then(data => {
+          beers[index] = data
+          this.setState({
+            beer_loading: false, 
+            beers: beers
+          });
+        });
     }
-    this.setState({
-      beer_loading: this.state.beer_loading, 
-      beers: beers
-    });
   }
 
 
