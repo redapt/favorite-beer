@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Options;
 
 namespace voting.Controllers
 {
@@ -11,21 +12,20 @@ namespace voting.Controllers
     public class VoteController : Controller
     {
         private readonly IDistributedCache _distributedCache;
+        private readonly IOptions<ServiceSettings> _serviceSettings; 
+        private readonly string[] BeerData;
 
-        public VoteController(IDistributedCache distributedCache)
+        public VoteController(IDistributedCache distributedCache, IOptions<ServiceSettings> serviceSettings)
         {
             _distributedCache = distributedCache;
+            _serviceSettings = serviceSettings;
+            BeerData = _serviceSettings.Value.Beers;
         }
-        
-        private static string[] BeerData = new[]
-        {
-            "Beer 1", "Beer 2", "Beer 3"
-        };
 
         [HttpGet("[action]")]
         public IEnumerable<Beer> options()
         {
-            return Enumerable.Range(0, 3).Select(index => new Beer
+            return Enumerable.Range(0, BeerData.Length).Select(index => new Beer
             {
                 Name = BeerData[index],
                 CurrentCount = int.Parse(System.Text.Encoding.UTF8.GetString(_distributedCache.Get(BeerData[index]) ?? System.Text.Encoding.UTF8.GetBytes("0")))

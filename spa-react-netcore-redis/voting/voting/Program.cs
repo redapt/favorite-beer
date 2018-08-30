@@ -19,6 +19,10 @@ namespace voting
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((hostingContext, config) =>
+                {
+                    config.AddJsonFile(System.Environment.GetEnvironmentVariable("SERVICE_SETTINGS_PATH") ?? "servicesettings.json", optional: true, reloadOnChange: true);
+                })
                 .UseStartup<Startup>();
     }
 }

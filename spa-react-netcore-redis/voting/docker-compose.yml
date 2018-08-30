@@ -9,10 +9,12 @@ services:
       - redis
     environment:
       - REDIS_HOST=redis
+      - REDIS_PORT=6379
     ports: 
       - '80:80'
   redis:
     image: "redis:3.2-alpine"
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
       - '6379:6379'
     volumes:
