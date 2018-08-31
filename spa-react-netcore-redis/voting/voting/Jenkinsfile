@@ -25,7 +25,7 @@ podTemplate(label: 'io',
         stage('\u27A1 Build Image') {
           checkout scm
           dir("spa-react-netcore-redis/voting/voting") {
-            sh "docker build -t ${docker_repo}:latest -f Dockerfile ."
+            sh "docker build -t ${docker_repo}:latest -f Dockerfile ../"
           }
         }
 
