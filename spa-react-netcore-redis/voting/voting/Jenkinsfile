@@ -24,7 +24,9 @@ podTemplate(label: 'io',
       docker.withRegistry(docker_repo_url, docker_repo_creds_id) {
         stage('\u27A1 Build Image') {
           checkout scm
+          dir("spa-react-netcore-redis/voting/voting") {
             sh "docker build -t ${docker_repo}:latest -f Dockerfile ."
+          }
         }
 
         stage('\u27A1 Publish successful build') {
