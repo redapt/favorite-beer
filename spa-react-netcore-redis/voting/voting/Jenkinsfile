@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 docker_repo = 'redaptcloud/favorite-beer'
-docker_repo_url = "https://registry.hub.docker.com"
+docker_repo_url = "https://docker.io"
 docker_repo_creds_id = 'docker_registry'
 
 podTemplate(label: 'io',
