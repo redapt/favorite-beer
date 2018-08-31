@@ -41,16 +41,5 @@ podTemplate(label: 'io',
         }
       }
     }
-    #stage('\u27A1 Tag') {
-    #  sshagent(['jenkins']) {
-    #    sh """
-    #      git config user.email \"jenkins@redapt.com\"
-    #      git config user.name \"Jenkins\"
-
-    #      git tag -a ${buildTag} -m \"CI Build\"
-    #      git push --tags
-    #    """
-    #  }
-    #}
   }
 }
