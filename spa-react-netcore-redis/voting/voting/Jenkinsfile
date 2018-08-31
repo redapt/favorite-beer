@@ -35,8 +35,8 @@ podTemplate(label: 'io',
           buildTag = "${docker_repo}:v${buildVersion}"
 
           sh """
-            docker tag ${docker_repo}:latest ${docker_repo}:${buildTag}
-            docker push ${docker_repo}:${buildTag}
+            docker tag ${docker_repo}:latest ${buildTag}
+            docker push ${buildTag}
             docker push ${docker_repo}:latest
           """
 
