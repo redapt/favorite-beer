@@ -1,0 +1,56 @@
+#!/usr/bin/env groovy
+
+docker_repo = 'redaptcloud/favorite-beer'
+docker_repo_url = "https://registry.hub.docker.com"
+docker_repo_creds_id = 'docker_registry'
+
+podTemplate(label: 'io',
+  containers: [
+    containerTemplate(name: 'docker', image: 'docker:latest', ttyEnabled: true, command: 'cat'),
+    containerTemplate(name: 'helm', image: "lachlanevenson/k8s-helm:v2.8.2", ttyEnabled: true, command: 'cat'),
+    containerTemplate(name: 'kubectl', image: "lachlanevenson/k8s-kubectl:v1.11.1", ttyEnabled: true, command: 'cat')
+  ],
+  volumes: [
+    hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
+    emptyDirVolume(mountPath: '/etc/tests', memory: false)
+  ],
+  serviceAccount: 'jenkins'
+)
+{
+  node(label: 'io') {
+    def buildVersion
+    def buildTag
+    container('docker') {
+      docker.withRegistry(docker_repo_url, docker_repo_creds_id) {
+        stage('\u27A1 Build Image') {
+          checkout scm
+            sh 'docker build -t ${docker_repo}:latest -f Dockerfile .'
+        }
+
+        stage('\u27A1 Publish successful build') {
+
+          buildVersion = "${BUILD_NUMBER}"
+          buildTag = "${docker_repo}:v${buildVersion}"
+
+          sh """
+            docker tag ${docker_repo}:latest ${docker_repo}:${buildTag}
+            docker push ${docker_repo}:${buildTag}
+            docker push ${docker_repo}:latest
+          """
+
+        }
+      }
+    }
+    #stage('\u27A1 Tag') {
+    #  sshagent(['jenkins']) {
+    #    sh """
+    #      git config user.email \"jenkins@redapt.com\"
+    #      git config user.name \"Jenkins\"
+
+    #      git tag -a ${buildTag} -m \"CI Build\"
+    #      git push --tags
+    #    """
+    #  }
+    #}
+  }
+}
