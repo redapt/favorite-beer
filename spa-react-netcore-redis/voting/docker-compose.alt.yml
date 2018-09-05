@@ -10,7 +10,7 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - SERVICE_SETTINGS_PATH=servicesettings_alt.json
+     # - SERVICE_SETTINGS_PATH=servicesettings_alt.json
     ports: 
       - '8000:80'
   redis:
