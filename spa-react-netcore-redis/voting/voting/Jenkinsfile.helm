@@ -48,11 +48,6 @@ podTemplate(label: 'io',
     }
 
     container('helm') {
-      stage('\u27A1 Lint instance chart')  {
-        dir("spa-react-netcore-redis/voting/voting") {
-            helmLint("k8s/Chart")
-        }
-      }
       stage('\u27A1 Deployment') {
         dir("spa-react-netcore-redis/voting/voting") {
           helmDeploy(dry_run: false, name: "${release_name}", chart_dir: "k8s/Chart", values: "k8s/${release_name}-values.yaml", tag: "v${buildVersion}", namespace: 'default')
@@ -60,11 +55,6 @@ podTemplate(label: 'io',
       }
     }
   }
-}
-
-
-def helmLint(String chart_dir) {
-  sh "helm lint ${chart_dir}"
 }
 
 def helmDeploy(Map args) {
