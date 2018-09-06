@@ -6,7 +6,7 @@ docker_repo_creds_id = 'docker_registry'
 
 podTemplate(label: 'io',
   containers: [
-    containerTemplate(name: 'docker', image: 'docker:18.06.1-ce', ttyEnabled: true, command: 'cat'),
+    containerTemplate(name: 'docker', image: 'docker:17.12.1', ttyEnabled: true, command: 'cat'),
     containerTemplate(name: 'helm', image: "lachlanevenson/k8s-helm:v2.8.2", ttyEnabled: true, command: 'cat'),
     containerTemplate(name: 'kubectl', image: "lachlanevenson/k8s-kubectl:v1.11.1", ttyEnabled: true, command: 'cat')
   ],
