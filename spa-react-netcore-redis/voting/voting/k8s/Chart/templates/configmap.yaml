@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  servicesettings.json: |
+{{ .Values.servicesettings | indent 4 }}
+kind: ConfigMap
+metadata:
+  name: {{ template "favorite-beer.fullname" . }}-settings

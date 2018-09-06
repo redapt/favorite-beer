@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "favorite-beer.fullname" . }}
+  labels:
+    app: {{ template "favorite-beer.name" . }}
+    chart: {{ template "favorite-beer.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "favorite-beer.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "favorite-beer.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          env:
+          - name: REDIS_HOST
+            value: {{ template "favorite-beer.fullname" . }}-redis
+          - name: REDIS_PORT
+            value: "{{ .Values.redis.service.port }}"
+          - name: SERVICE_SETTINGS_PATH
+            value: /etc/config/servicesettings.json
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+{{- if .Values.ports }}
+{{- with .Values.ports }}
+{{ toYaml . | indent 10 }}
+{{- end }}
+{{- else }}
+          - name: http
+            containerPort: 80
+            protocol: TCP
+{{- end }}          
+{{- if .Values.probes.enabled }}
+          livenessProbe:
+{{ toYaml .Values.probes.livenessProbe | indent 12 }}
+          readinessProbe:
+{{ toYaml .Values.probes.readinessProbe | indent 12 }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          volumeMounts:
+          - name: config-volume
+            mountPath: /etc/config
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ template "favorite-beer.fullname" . }}-settings

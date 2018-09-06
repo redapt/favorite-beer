@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "favorite-beer.fullname" . }}-redis
+  labels:
+    app: {{ template "favorite-beer.name" . }}-redis
+    chart: {{ template "favorite-beer.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.redis.service.type }}
+  ports:
+    - port: {{ .Values.redis.service.port }}
+      targetPort: {{ .Values.redis.service.port }}
+      protocol: TCP
+      name: redis
+  selector:
+    app: {{ template "favorite-beer.name" . }}-redis
+    release: {{ .Release.Name }}
+
+
