@@ -1,0 +1,81 @@
+#!/usr/bin/env groovy
+
+docker_repo = 'redaptcloud/favorite-beer'
+docker_repo_url = ""
+docker_repo_creds_id = 'docker_registry'
+
+parameters {
+    string(name: 'release_name', defaultValue: 'default', description: 'What release are you targeting?')
+}
+
+
+podTemplate(label: 'io',
+  containers: [
+    containerTemplate(name: 'docker', image: 'docker:latest', ttyEnabled: true, command: 'cat'),
+    containerTemplate(name: 'helm', image: "lachlanevenson/k8s-helm:v2.8.2", ttyEnabled: true, command: 'cat'),
+    containerTemplate(name: 'kubectl', image: "lachlanevenson/k8s-kubectl:v1.11.1", ttyEnabled: true, command: 'cat')
+  ],
+  volumes: [
+    hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
+    emptyDirVolume(mountPath: '/etc/tests', memory: false)
+  ],
+  serviceAccount: 'jenkins'
+)
+{
+  node(label: 'io') {
+    def buildVersion
+    def buildTag
+    container('docker') {
+      docker.withRegistry(docker_repo_url, docker_repo_creds_id) {
+        stage('\u27A1 Build Image') {
+          checkout scm
+          dir("spa-react-netcore-redis/voting/voting") {
+            sh "docker build -t ${docker_repo}:latest -f Dockerfile ../"
+          }
+        }
+
+        stage('\u27A1 Publish successful build') {
+
+          buildVersion = "${BUILD_NUMBER}"
+          buildTag = "${docker_repo}:v${buildVersion}"
+
+          sh """
+            docker tag ${docker_repo}:latest ${buildTag}
+            docker push ${buildTag}
+            docker push ${docker_repo}:latest
+          """
+
+        }
+      }
+    }
+
+    container('helm') {
+      stage('\u27A1 Lint instance chart')  {
+        dir("spa-react-netcore-redis/voting/voting") {
+            helmLint("k8s/Chart")
+        }
+      }
+      stage('\u27A1 Deployment') {
+        dir("spa-react-netcore-redis/voting/voting") {
+          helmDeploy(dry_run: false, name: "${release_name}", chart_dir: "k8s/Chart", values: "k8s/denver-values.yaml", tag: "v${buildVersion}", namespace: 'default')
+        }
+      }
+    }
+  }
+}
+
+
+def helmLint(String chart_dir) {
+  sh "helm lint ${chart_dir}"
+}
+
+def helmDeploy(Map args) {
+  if (args.dry_run) {
+    println "Running dry-run deployment"
+    sh "helm upgrade --dry-run --debug --install ${args.name} ${args.chart_dir} -f ${args.values} --set image.tag=${args.tag} --namespace=${args.namespace}"
+  }
+  else {
+    println "Running deployment"
+    sh "helm upgrade --install ${args.name} ${args.chart_dir} -f ${args.values} --set image.tag=${args.tag} --namespace=${args.namespace}"
+  }
+}
