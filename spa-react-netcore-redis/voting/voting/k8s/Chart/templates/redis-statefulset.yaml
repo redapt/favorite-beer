@@ -1,7 +1,8 @@
+{{ if ! .Values.gke.enabled }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: favorite-beer-redis
+  name: {{ template "favorite-beer.fullname" . }}-redis
   labels:
     app: {{ template "favorite-beer.name" . }}-redis
     chart: {{ template "favorite-beer.chart" . }}
@@ -39,3 +40,4 @@ spec:
       resources:
         requests:
           storage: 1Gi
+{{ end }}
