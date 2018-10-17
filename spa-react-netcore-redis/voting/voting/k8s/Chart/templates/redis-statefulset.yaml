@@ -1,4 +1,5 @@
-{{ if .Values.gke.enabled != true }}
+{{ if .Values.gke.enabled }}
+{{ else }}
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
