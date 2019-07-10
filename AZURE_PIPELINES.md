@@ -84,3 +84,10 @@ variables:
   value: 'redaptdemo'
 ```
 
+## Wrap up and run it.
+
+All of the secrets and variables should work now, kick off a job! We are using simple logic, that can be run on the ubuntu-base image, but you can specify a custom image as well.
+
+https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/agents?view=azure-devops#install
+
+https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/pools-queues?view=azure-devops#default-agent-pools

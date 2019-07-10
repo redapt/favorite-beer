@@ -9,6 +9,8 @@ variables:
 
 trigger:
 - azure-pipelines
+
+
 jobs:
 
 # Set an output variable from job A
@@ -48,3 +50,14 @@ jobs:
       ARM_CLIENT_SECRET: $(arm-client-secret)
       ACR_NAME: $(variable_acr_name)
 
+  - task: HelmInstaller@0
+    displayName: 'Install Helm'
+    inputs:
+      helmVersion: 2.14.1
+
+  - bash: helm package --version $(build.buildId) --destination $(build.artifactStagingDirectory) .
+    displayName: 'helm package'
+    workingDirectory: "spa-react-netcore-redis/voting/voting/k8s/Chart"
+
+  - bash: az acr helm push -n $(variable_acr_name) $(build.artifactStagingDirectory)/favorite-beer-$(build.buildId).tgz
+    displayName: 'az acr helm push'
