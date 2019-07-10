@@ -62,3 +62,12 @@ jobs:
 
   - bash: az acr helm push -n $(variable_acr_name) $(build.artifactStagingDirectory)/favorite-beer-$(build.buildId).tgz
     displayName: 'az acr helm push'
+
+  - bash: az acr helm repo add -n $(variable_acr_name)
+    displayName: 'az acr helm repo add'
+
+  - bash: helm search $(variable_acr_name)
+    displayName: 'helm search'
+
+  - bash: helm inspect $(variable_acr_name)/favorite-beer
+    displayName: 'helm inspect'
