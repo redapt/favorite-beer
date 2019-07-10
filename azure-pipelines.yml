@@ -55,7 +55,7 @@ jobs:
     inputs:
       command: buildAndPush
       repository: "favorite-beer"
-      dockerfile: "spa-react-netcore-redis/voting/voting"
+      dockerfile: "spa-react-netcore-redis/voting/voting/Dockerfile"
       containerRegistry: redaptdemo
       buildContext: spa-react-netcore-redis/voting
       tags: |
