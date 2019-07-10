@@ -91,3 +91,7 @@ All of the secrets and variables should work now, kick off a job! We are using s
 https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/agents?view=azure-devops#install
 
 https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/pools-queues?view=azure-devops#default-agent-pools
+
+We have also included a step to push a packaged helm chart as an artifact, using an Azure DevOps built-in task. You can view others here: 
+
+https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/?view=azure-devops

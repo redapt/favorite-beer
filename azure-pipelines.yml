@@ -50,6 +50,7 @@ jobs:
       ARM_CLIENT_SECRET: $(arm-client-secret)
       ACR_NAME: $(variable_acr_name)
 
+  # https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/tool/helm-installer?view=azure-devops
   - task: HelmInstaller@0
     displayName: 'Install Helm'
     inputs:
@@ -57,7 +58,7 @@ jobs:
 
   - bash: helm package --version $(build.buildId) --destination $(build.artifactStagingDirectory) .
     displayName: 'helm package'
-    workingDirectory: "spa-react-netcore-redis/voting/voting/k8s/Chart"
+    workingDirectory: "spa-react-netcore-redis/voting/voting/k8s/favorite-beer"
 
   - bash: az acr helm push -n $(variable_acr_name) $(build.artifactStagingDirectory)/favorite-beer-$(build.buildId).tgz
     displayName: 'az acr helm push'
