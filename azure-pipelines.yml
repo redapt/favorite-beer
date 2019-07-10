@@ -2,34 +2,49 @@
 # Start with a minimal pipeline that you can customize to build and deploy your code.
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
+variables:
+- group: redaptdemo
+- name: variable_acr_name
+  value: 'redaptdemo'
 
 trigger:
 - azure-pipelines
+jobs:
 
-pool:
-  vmImage: 'ubuntu-latest'
+# Set an output variable from job A
+- job: DockerBuildAndPush
+  pool:
+    vmImage: 'ubuntu-latest'
 
-steps:
+  steps:
 
-- script: |
-    docker build -t redaptcloud/favorite-beer:$BUILD_TAG -f Dockerfile ../
-  name: "DockerBuild"
-  displayName: 'Run a docker build.'
-  workingDirectory: "spa-react-netcore-redis/voting/voting"
-  env:
-    BUILD_TAG: $(Build.SourceVersion)
-  continueOnError: false
-  enabled: true
-  timeoutInMinutes: 15
-  failOnStderr: false
+  - script: |
+      docker build -t $ACR_NAME.azurecr.io/favorite-beer:$BUILD_TAG -f Dockerfile ../
+    name: "DockerBuild"
+    displayName: 'Run a docker build.'
+    workingDirectory: "spa-react-netcore-redis/voting/voting"
+    env:
+      BUILD_TAG: $(Build.SourceVersion)
+      ACR_NAME: $(variable_acr_name)
+    continueOnError: false
+    enabled: true
+    timeoutInMinutes: 15
+    failOnStderr: false
 
 
-- script: |
-    docker tag redaptcloud/favorite-beer:$BUILD_TAG redaptcloud/favorite-beer:latest
-    docker push redaptcloud/favorite-beer:$BUILD_TAG
-    docker push redaptcloud/favorite-beer:latest
-  displayName: 'Tag and upload the build.'
-  workingDirectory: "spa-react-netcore-redis/voting/voting"
-  env:
-    BUILD_TAG: $(Build.SourceVersion)
+  - script: |
+      az login --service-principal --tenant $ARM_TENANT_ID -u $ARM_CLIENT_ID -p $ARM_CLIENT_SECRET
+      az acr login --name $ACR_NAME
+      docker tag $ACR_NAME.azurecr.io/favorite-beer:$BUILD_TAG $ACR_NAME.azurecr.io/favorite-beer:latest
+      docker push $ACR_NAME.azurecr.io/favorite-beer:$BUILD_TAG
+      docker push $ACR_NAME.azurecr.io/favorite-beer:latest
+    name: "DockerPush"
+    displayName: 'Tag and upload the build.'
+    workingDirectory: "spa-react-netcore-redis/voting/voting"
+    env:
+      BUILD_TAG: $(Build.SourceVersion)
+      ARM_TENANT_ID: $(ext_variable_arm_tenant_id)
+      ARM_CLIENT_ID: $(ext_variable_arm_client_id)
+      ARM_CLIENT_SECRET: $(arm-client-secret)
+      ACR_NAME: $(variable_acr_name)
 
