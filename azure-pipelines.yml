@@ -10,12 +10,26 @@ pool:
   vmImage: 'ubuntu-latest'
 
 steps:
-- script: echo Hello, world!
-  displayName: 'Run a one-line script again'
 
-- script: |
+- name: Docker Build
+  script: |
     docker build -t redaptcloud/favorite-beer:$BUILD_TAG -f Dockerfile ../
   displayName: 'Run a docker build.'
   workingDirectory: "spa-react-netcore-redis/voting/voting"
   env:
     BUILD_TAG: $(Build.SourceVersion)
+  continueOnError: false
+  enabled: true
+  timeoutInMinutes: 15
+  failOnStderr: false
+
+
+- script: |
+    docker tag redaptcloud/favorite-beer:$BUILD_TAG redaptcloud/favorite-beer:latest
+    docker push redaptcloud/favorite-beer:$BUILD_TAG
+    docker push redaptcloud/favorite-beer:latest
+  displayName: 'Tag and upload the build.'
+  workingDirectory: "spa-react-netcore-redis/voting/voting"
+  env:
+    BUILD_TAG: $(Build.SourceVersion)
+
