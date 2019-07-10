@@ -34,21 +34,32 @@ jobs:
     failOnStderr: false
 
 
-  - script: |
-      az login --service-principal --tenant $ARM_TENANT_ID -u $ARM_CLIENT_ID -p $ARM_CLIENT_SECRET
-      az acr login --name $ACR_NAME
-      docker tag $ACR_NAME.azurecr.io/favorite-beer:$BUILD_TAG $ACR_NAME.azurecr.io/favorite-beer:latest
-      docker push $ACR_NAME.azurecr.io/favorite-beer:$BUILD_TAG
-      docker push $ACR_NAME.azurecr.io/favorite-beer:latest
-    name: "DockerPush"
-    displayName: 'Tag and upload the build.'
-    workingDirectory: "spa-react-netcore-redis/voting/voting"
-    env:
-      BUILD_TAG: $(Build.SourceVersion)
-      ARM_TENANT_ID: $(ext_variable_arm_tenant_id)
-      ARM_CLIENT_ID: $(ext_variable_arm_client_id)
-      ARM_CLIENT_SECRET: $(arm-client-secret)
-      ACR_NAME: $(variable_acr_name)
+  # - script: |
+  #     az login --service-principal --tenant $ARM_TENANT_ID -u $ARM_CLIENT_ID -p $ARM_CLIENT_SECRET
+  #     az acr login --name $ACR_NAME
+  #     docker tag $ACR_NAME.azurecr.io/favorite-beer:$BUILD_TAG $ACR_NAME.azurecr.io/favorite-beer:latest
+  #     docker push $ACR_NAME.azurecr.io/favorite-beer:$BUILD_TAG
+  #     docker push $ACR_NAME.azurecr.io/favorite-beer:latest
+  #   name: "DockerPush"
+  #   displayName: 'Tag and upload the build.'
+  #   workingDirectory: "spa-react-netcore-redis/voting/voting"
+  #   env:
+  #     BUILD_TAG: $(Build.SourceVersion)
+  #     ARM_TENANT_ID: $(ext_variable_arm_tenant_id)
+  #     ARM_CLIENT_ID: $(ext_variable_arm_client_id)
+  #     ARM_CLIENT_SECRET: $(arm-client-secret)
+  #     ACR_NAME: $(variable_acr_name)
+
+  - task: Docker@2
+    displayName: Build and push an image to container registry
+    inputs:
+      command: buildAndPush
+      repository: "favorite-beer"
+      dockerfile: "spa-react-netcore-redis/voting/voting"
+      containerRegistry: redaptdemo
+      tags: |
+        $(Build.SourceVersion)
+        latest
 
   # https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/tool/helm-installer?view=azure-devops
   - task: HelmInstaller@0

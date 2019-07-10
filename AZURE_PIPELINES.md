@@ -95,3 +95,31 @@ https://docs.microsoft.com/en-us/azure/devops/pipelines/agents/pools-queues?view
 We have also included a step to push a packaged helm chart as an artifact, using an Azure DevOps built-in task. You can view others here: 
 
 https://docs.microsoft.com/en-us/azure/devops/pipelines/tasks/?view=azure-devops
+
+
+
+### Azure Container Registry Service Connection
+
+Go into Project settings on Azure DevOps and then navigate to `Service Connections`.
+
+Create a `+ New service connection` called `redaptdemo`, and connect to Azure Container Registry `redaptdemo`. Click `Ok`.
+
+In the service connections page, click `redaptdemo` and then navigate to the `Policies` tab. Select `Allow all pipelines to use this service connection`.
+
+In our azure-pipelines.yml, we can define the following block in place of our initial container push logic.
+
+```
+  - task: Docker@2
+    displayName: Build and push an image to container registry
+    inputs:
+      command: buildAndPush
+      repository: "favorite-beer"
+      dockerfile: "spa-react-netcore-redis/voting/voting"
+      containerRegistry: redaptdemo
+      tags: |
+        $(Build.SourceVersion)
+        latest
+```
+
+You can also create custom service endpoints/connections.
+https://docs.microsoft.com/en-us/azure/devops/extend/develop/service-endpoints?view=azure-devops
