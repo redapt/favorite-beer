@@ -11,9 +11,9 @@ pool:
 
 steps:
 
-- name: DockerBuild
-  script: |
+- script: |
     docker build -t redaptcloud/favorite-beer:$BUILD_TAG -f Dockerfile ../
+  name: "DockerBuild"
   displayName: 'Run a docker build.'
   workingDirectory: "spa-react-netcore-redis/voting/voting"
   env:
