@@ -20,18 +20,18 @@ jobs:
 
   steps:
 
-  - script: |
-      docker build -t $ACR_NAME.azurecr.io/favorite-beer:$BUILD_TAG -f Dockerfile ../
-    name: "DockerBuild"
-    displayName: 'Run a docker build.'
-    workingDirectory: "spa-react-netcore-redis/voting/voting"
-    env:
-      BUILD_TAG: $(Build.SourceVersion)
-      ACR_NAME: $(variable_acr_name)
-    continueOnError: false
-    enabled: true
-    timeoutInMinutes: 15
-    failOnStderr: false
+  # - script: |
+  #     docker build -t $ACR_NAME.azurecr.io/favorite-beer:$BUILD_TAG -f Dockerfile ../
+  #   name: "DockerBuild"
+  #   displayName: 'Run a docker build.'
+  #   workingDirectory: "spa-react-netcore-redis/voting/voting"
+  #   env:
+  #     BUILD_TAG: $(Build.SourceVersion)
+  #     ACR_NAME: $(variable_acr_name)
+  #   continueOnError: false
+  #   enabled: true
+  #   timeoutInMinutes: 15
+  #   failOnStderr: false
 
 
   # - script: |
@@ -57,6 +57,7 @@ jobs:
       repository: "favorite-beer"
       dockerfile: "spa-react-netcore-redis/voting/voting"
       containerRegistry: redaptdemo
+      buildContext: spa-react-netcore-redis/voting
       tags: |
         $(Build.SourceVersion)
         latest
