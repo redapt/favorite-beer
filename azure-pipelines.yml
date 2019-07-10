@@ -11,7 +11,7 @@ pool:
 
 steps:
 
-- name: Docker Build
+- name: DockerBuild
   script: |
     docker build -t redaptcloud/favorite-beer:$BUILD_TAG -f Dockerfile ../
   displayName: 'Run a docker build.'
