@@ -10,7 +10,7 @@ RUN apt-get install --yes nodejs
 RUN apt-get install --yes build-essential
 WORKDIR /src
 COPY voting.csproj /
-RUN dotnet restore voting/voting.csproj
+RUN dotnet restore voting/voting/voting.csproj
 COPY . .
 WORKDIR /src/voting
 RUN dotnet build voting.csproj -c Release -o /app
