@@ -1,0 +1,52 @@
+#!/usr/bin/env groovy
+
+svc_name = 'favorite-beer'
+gcr_host = 'gcr.io'
+docker_image = 'favorite-beer'
+gcp_project = 'verve-production'
+
+podTemplate(label: 'io',
+  containers: [
+    containerTemplate(name: 'docker', image: 'docker:17.12.1', ttyEnabled: true, command: 'cat'),
+    containerTemplate(name: 'gcloud-helm', image: "devth/helm:v2.13.1", ttyEnabled: true, command: 'cat'),
+    containerTemplate(name: 'git', image: "alpine/git:1.0.7", ttyEnabled: true, command: 'cat')
+  ],
+  volumes: [
+    hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
+    emptyDirVolume(mountPath: '/etc/tests', memory: false)
+  ]
+)
+
+{
+  node(label: 'io') {
+
+    container('git') {
+      stage('\u27A1 Grab Last Commit') {
+
+        git branch: 'master',
+        credentialsId: 'andyt338_github',
+        url: 'https://github.com/redapt/favorite-beer.git'
+
+        lastCommitLong = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
+        sh("echo ${lastCommitLong}")
+      }
+    }
+
+    container('gcloud-helm') {
+
+      withCredentials([file(credentialsId: 'gcp-sa', variable: 'GC_KEY')]) {
+        stage('\u27A1 Deploy to Google Build') {
+
+          dir("spa-react-netcore-redis/voting") {
+          
+            sh("gcloud auth activate-service-account --key-file=${GC_KEY}")
+            sh("cp voting/Dockerfile Dockerfile")
+            sh("gcloud builds submit --config spa-react-netcore-redis/voting/jenkins-cloudbuild.yaml --gcs-log-dir gs://verve-production_cloudbuild-logs/logs --substitutions=TAG_NAME='${gcr_host}/${gcp_project}/${docker_image}:${lastCommitLong}' .")
+
+          }
+      
+        }
+      }
+    }
+  }
+}
