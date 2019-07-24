@@ -1,4 +1,5 @@
 steps:
   - name: gcr.io/kaniko-project/executor:latest
     args: ["--dockerfile=voting/Dockerfile",
-           "--destination=$TAG_NAME"]
+           "--destination=$TAG_NAME",
+           "--cache=true"]
