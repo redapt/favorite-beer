@@ -1,4 +1,5 @@
 steps:
   - name: gcr.io/kaniko-project/executor:latest
     args: ["--dockerfile=voting/Dockerfile",
-           "--context=dir:spa-react-netcore-redis/voting"]
+           "--context=dir:spa-react-netcore-redis/voting",
+           "--destination=$DESTINATION"]
