@@ -12,7 +12,7 @@ WORKDIR /src
 # COPY voting/voting.csproj voting/
 RUN dotnet restore voting/voting.csproj
 COPY . .
-WORKDIR /src/voting
+# WORKDIR /src/voting
 RUN dotnet build voting.csproj -c Release -o /app
 
 FROM build AS publish
