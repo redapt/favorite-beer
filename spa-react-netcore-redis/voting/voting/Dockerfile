@@ -9,8 +9,10 @@ RUN curl --silent  --location https://deb.nodesource.com/setup_10.x |  bash -
 RUN apt-get install --yes nodejs
 RUN apt-get install --yes build-essential
 WORKDIR /src
-COPY voting.csproj /
-RUN dotnet restore voting/voting/voting.csproj
+RUN echo $(ls -l)
+RUN echo $(pwd)
+COPY voting/voting.csproj voting/
+RUN dotnet restore voting/voting.csproj
 COPY . .
 WORKDIR /src/voting
 RUN dotnet build voting.csproj -c Release -o /app
