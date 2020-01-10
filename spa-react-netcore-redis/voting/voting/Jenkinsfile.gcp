@@ -7,12 +7,10 @@ gcp_project = 'verve-production'
 
 podTemplate(label: 'io',
   containers: [
-    containerTemplate(name: 'docker', image: 'docker:17.12.1', ttyEnabled: true, command: 'cat'),
     containerTemplate(name: 'gcloud-helm', image: "devth/helm:v2.13.1", ttyEnabled: true, command: 'cat'),
     containerTemplate(name: 'git', image: "alpine/git:1.0.7", ttyEnabled: true, command: 'cat')
   ],
   volumes: [
-    hostPathVolume(hostPath: '/var/run/docker.sock', mountPath: '/var/run/docker.sock'),
     emptyDirVolume(mountPath: '/etc/tests', memory: false)
   ]
 )
@@ -24,7 +22,6 @@ podTemplate(label: 'io',
       stage('\u27A1 Grab Last Commit') {
 
         git branch: 'master',
-        credentialsId: 'andyt338_github',
         url: 'https://github.com/redapt/favorite-beer.git'
 
         lastCommitLong = sh(script: "git rev-parse HEAD", returnStdout: true).trim()
