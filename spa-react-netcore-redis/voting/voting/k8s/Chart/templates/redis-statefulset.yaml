@@ -36,7 +36,7 @@ spec:
   - metadata:
       name: redis-data
     spec:
-      storageClassName: managed-premium
+      storageClassName: {{ .Values.redis.storageClassName }}
       accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:

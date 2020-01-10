@@ -45,6 +45,7 @@ redis:
     repository: redaptcloud/redis
     tag: 3.2-alpine
     pullPolicy: IfNotPresent
+  storageClassName: "" #managed-premium for azure
 
 ingress:
   enabled: false
