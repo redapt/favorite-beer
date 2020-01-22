@@ -37,7 +37,7 @@ podTemplate(label: 'io',
           dir("spa-react-netcore-redis/voting") {
           
             sh("gcloud auth activate-service-account --key-file=${GC_KEY}")
-            sh("gcloud builds submit --config jenkins-cloudbuild.yaml --gcs-log-dir gs://verve-production_cloudbuild-logs/logs --substitutions=TAG_NAME='${gcr_host}/${gcp_project}/${docker_image}:${lastCommitLong}' .")
+            sh("gcloud builds submit --config jenkins-cloudbuild.yaml --gcs-log-dir gs://redapt-anthos-poc_cloudbuild-logs/logs --substitutions=TAG_NAME='${gcr_host}/${gcp_project}/${docker_image}:${lastCommitLong}' .")
 
           }
       
