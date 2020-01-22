@@ -6,7 +6,7 @@ docker_image = 'favorite-beer'
 gcp_project = 'redapt-anthos-poc'
 release_name = "gcp"
 
-podTemplate(label: 'io',
+podTemplate(label: 'io-helm',
   containers: [
     containerTemplate(name: 'gcloud-helm', image: "devth/helm:v3.0.2", ttyEnabled: true, command: 'cat'),
     containerTemplate(name: 'git', image: "alpine/git:1.0.7", ttyEnabled: true, command: 'cat')
@@ -17,7 +17,7 @@ podTemplate(label: 'io',
 )
 
 {
-  node(label: 'io') {
+  node(label: 'io-helm') {
 
     container('git') {
       stage('\u27A1 Grab Last Commit') {
