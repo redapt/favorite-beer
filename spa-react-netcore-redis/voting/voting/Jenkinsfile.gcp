@@ -3,7 +3,7 @@
 svc_name = 'favorite-beer'
 gcr_host = 'gcr.io'
 docker_image = 'favorite-beer'
-gcp_project = 'verve-production'
+gcp_project = 'redapt-anthos-poc'
 
 podTemplate(label: 'io',
   containers: [
