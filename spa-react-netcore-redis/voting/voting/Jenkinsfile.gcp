@@ -8,7 +8,7 @@ release_name = "gcp"
 
 podTemplate(label: 'io',
   containers: [
-    containerTemplate(name: 'gcloud-helm', image: "devth/helm:v2.13.1", ttyEnabled: true, command: 'cat'),
+    containerTemplate(name: 'gcloud-helm', image: "devth/helm:v3.0.2", ttyEnabled: true, command: 'cat'),
     containerTemplate(name: 'git', image: "alpine/git:1.0.7", ttyEnabled: true, command: 'cat')
   ],
   volumes: [
