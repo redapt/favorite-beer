@@ -17,7 +17,7 @@ ports:
 servicesettings: |-
   {
     "ServiceSettings": {
-      "Beers": ["Great Divide", "Epic", "Resolute"]
+      "Beers": ["Great Divide", "Epic", "Resolute", "Fourth Beer"]
     }
   }
 
