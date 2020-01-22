@@ -43,8 +43,18 @@ podTemplate(label: 'io-helm',
             sh("gcloud auth activate-service-account --key-file=${GC_KEY}")
 
           }
+      
+        }
+      }
+
+      withCredentials([file(credentialsId: 'gcp-sa', variable: 'GC_KEY')]) {
+        stage('\u27A1 Deploy to Kubernetes') {
 
           dir("spa-react-netcore-redis/voting/voting") {
+
+            sh("gcloud auth activate-service-account --key-file=${GC_KEY}")
+            sh("gcloud beta container clusters get-credentials main-1 --region us-west1 --project redapt-anthos-poc")
+
             helmDeploy(dry_run: false, name: "${release_name}", chart_dir: "k8s/Chart", values: "k8s/gcr-values.yaml", repository: "${gcr_host}/${gcp_project}/${docker_image}", tag: "${lastCommitLong}", namespace: 'default')
           }
       
