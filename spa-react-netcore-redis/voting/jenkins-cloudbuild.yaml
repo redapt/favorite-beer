@@ -1,6 +1,7 @@
 steps:
-  - name: gcr.io/kaniko-project/executor:latest
+  - name: gcr.io/kaniko-project/executor:0.16.0
     args: ["--dockerfile=voting/Dockerfile",
            "--destination=$TAG_NAME",
            "--cache=true",
-           "--cache-dir=/cache2"]
+           "--cache-dir=/cache",
+           "--single-snapshot"]
