@@ -3,4 +3,4 @@ steps:
     args: ["--dockerfile=voting/Dockerfile",
            "--destination=$TAG_NAME",
            "--cache=true",
-           "--cache-dir=/cache"]
+           "--cache-dir=/cache2"]
