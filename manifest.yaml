@@ -1,0 +1,153 @@
+---
+# Source: favorite-beer/templates/configmap.yaml
+apiVersion: v1
+data:
+  servicesettings.json: |
+    {
+      "ServiceSettings": {
+        "Beers": ["Great Divide", "Epic", "Resolute", "Extra Beer"]
+      }
+    }
+kind: ConfigMap
+metadata:
+  name: favorite-beer-settings
+---
+# Source: favorite-beer/templates/redis-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: favorite-beer-redis
+  labels:
+    app: favorite-beer-redis
+    chart: favorite-beer-0.1.0
+    release: favorite-beer
+    heritage: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
+      name: redis
+  selector:
+    app: favorite-beer-redis
+    release: favorite-beer
+---
+# Source: favorite-beer/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: favorite-beer
+  labels:
+    app: favorite-beer
+    chart: favorite-beer-0.1.0
+    release: favorite-beer
+    heritage: Helm
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: favorite-beer
+    release: favorite-beer
+---
+# Source: favorite-beer/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: favorite-beer
+  labels:
+    app: favorite-beer
+    chart: favorite-beer-0.1.0
+    release: favorite-beer
+    heritage: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: favorite-beer
+      release: favorite-beer
+  template:
+    metadata:
+      labels:
+        app: favorite-beer
+        release: favorite-beer
+    spec:
+      containers:
+        - name: favorite-beer
+          image: "redaptcloud/favorite-beer:v1"
+          env:
+          - name: REDIS_HOST
+            value: favorite-beer-redis
+          - name: REDIS_PORT
+            value: "6379"
+          - name: SERVICE_SETTINGS_PATH
+            value: /etc/config/servicesettings.json
+          imagePullPolicy: IfNotPresent
+          ports:
+          - containerPort: 80
+            name: http
+            protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {}
+          volumeMounts:
+          - name: config-volume
+            mountPath: /etc/config
+      volumes:
+        - name: config-volume
+          configMap:
+            name: favorite-beer-settings
+---
+# Source: favorite-beer/templates/redis-statefulset.yaml
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: favorite-beer-redis
+  labels:
+    app: favorite-beer-redis
+    chart: favorite-beer-0.1.0
+    release: favorite-beer
+    heritage: Helm
+spec:
+  serviceName: favorite-beer-redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: favorite-beer-redis
+      release: favorite-beer
+  template:
+    metadata:
+      labels:
+        app: favorite-beer-redis
+        release: favorite-beer
+    spec:
+      containers:
+      - name: favorite-beer-redis
+        image: "redaptcloud/redis:3.2-alpine"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 6379
+          name: redis
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      storageClassName: 
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
