@@ -53,7 +53,7 @@ stages:
       vmImage: $(vmImageName)
     steps:
 
-    - task: HelmDeploy@0
+    - task: HelmDeploy@3
       displayName: Helm install
       inputs:
         connectionType: Kubernetes Service Connection
@@ -67,7 +67,7 @@ stages:
         install: true
         failOnStderr: false
 
-    - task: HelmDeploy@0
+    - task: HelmDeploy@3
       displayName: Helm list
       inputs:
         connectionType: Kubernetes Service Connection
