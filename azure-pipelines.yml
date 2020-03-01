@@ -73,4 +73,4 @@ stages:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(aksServiceConnection)
         command: ls
-        arguments: --all
+        arguments: --all-namespaces
