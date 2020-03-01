@@ -15,7 +15,7 @@ variables:
   containerRegistry: 'jmeisnertestacr.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
-  tag: '$(Build.BuildId)'
+  tag: 'jm-$(Build.BuildId)'
   
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
