@@ -14,6 +14,7 @@ variables:
   imageRepository: 'favoritebeer'
   containerRegistry: 'jmeisnertestacr.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
+  buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
   tag: '$(Build.BuildId)'
   
   # Agent VM image name
@@ -35,6 +36,6 @@ stages:
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
         containerRegistry: $(dockerRegistryServiceConnection)
-        buildContext: spa-react-netcore-redis/voting
+        buildContext: $(buildContextPath)
         tags: |
           $(tag)
