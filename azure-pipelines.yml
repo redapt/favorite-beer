@@ -15,7 +15,11 @@ variables:
   containerRegistry: 'jmeisnertestacr.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
+  helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
+  valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
+  aksServiceConnection: 'd096e26f-577c-4fe9-9ec0-56c53100cec5'
   tag: 'jm-$(Build.BuildId)'
+  releaseName: 'demo'
   
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -39,3 +43,34 @@ stages:
         buildContext: $(buildContextPath)
         tags: |
           $(tag)
+
+- stage: Deploy
+  displayName: Deploy to Cluster
+  jobs:  
+  - job: Deploy
+    displayName: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+
+    - task: HelmDeploy@0
+      displayName: Helm install
+      inputs:
+        connectionType: Kubernetes Service Connection
+        kubernetesServiceEndpoint: $(aksServiceConnection)
+        command: upgrade
+        overrideValues: 'image.repository=$(containerRegistry)/$(imageRepository),image.tag=$(tag)'
+        chartType: FilePath
+        chartPath: $(helmChartPath)
+        valueFile: $(valueFilePath)
+        releaseName: $(releaseName)
+        install: true
+        failOnStderr: false
+
+    - task: HelmDeploy@0
+      displayName: Helm list
+      inputs:
+        connectionType: Kubernetes Service Connection
+        kubernetesServiceEndpoint: $(aksServiceConnection)
+        command: ls
+        arguments: --all
