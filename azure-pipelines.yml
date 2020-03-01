@@ -10,7 +10,7 @@ resources:
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '79742df5-1b3d-4fa3-8fc4-153b26e8bb91'
+  dockerRegistryServiceConnection: '2a175992-247b-463c-8f5e-d20a95675f2c'
   imageRepository: 'favoritebeer'
   containerRegistry: 'jmeisnertestacr.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
