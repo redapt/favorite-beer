@@ -43,6 +43,7 @@ stages:
         buildContext: $(buildContextPath)
         tags: |
           $(tag)
+          '$(Build.SourceBranchName)-latest'
 
 - stage: Deploy
   displayName: Deploy to Cluster
