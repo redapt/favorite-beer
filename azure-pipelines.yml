@@ -71,11 +71,3 @@ stages:
         releaseName: $(releaseName)
         install: true
         failOnStderr: false
-
-    - task: HelmDeploy@0
-      displayName: Helm list
-      inputs:
-        connectionType: Kubernetes Service Connection
-        kubernetesServiceEndpoint: $(aksServiceConnection)
-        command: ls
-        arguments: --all-namespaces
