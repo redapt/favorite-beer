@@ -18,7 +18,7 @@ variables:
   helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
   valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
   aksServiceConnection: 'd096e26f-577c-4fe9-9ec0-56c53100cec5'
-  tag: 'jm-$(Build.BuildId)'
+  tag: '$(Build.BuildId)'
   releaseName: 'demo'
   
   # Agent VM image name
