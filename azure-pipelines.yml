@@ -19,6 +19,7 @@ variables:
   valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
   aksServiceConnection: 'd096e26f-577c-4fe9-9ec0-56c53100cec5'
   tag: '$(Build.BuildId)'
+  latestTag: '$(Build.SourceBranchName)-latest'
   releaseName: 'demo'
   
   # Agent VM image name
@@ -43,7 +44,7 @@ stages:
         buildContext: $(buildContextPath)
         tags: |
           $(tag)
-          '$(Build.SourceBranchName)-latest'
+          $(latestTag)
 
 - stage: Deploy
   displayName: Deploy to Cluster
