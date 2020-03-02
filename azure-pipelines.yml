@@ -54,12 +54,14 @@ stages:
     steps:
 
     - task: HelmInstaller@1
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
       displayName: Helm installer
       inputs: 
         helmVersionToInstall: 3.0.2
 
     - task: HelmDeploy@0
-      displayName: Helm install
+      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
+      displayName: Deploy to Demo
       inputs:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(aksServiceConnection)
