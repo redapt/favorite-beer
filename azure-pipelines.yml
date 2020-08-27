@@ -10,14 +10,14 @@ resources:
 
 variables:
   # Container registry service connection established during pipeline creation
-  dockerRegistryServiceConnection: '2a175992-247b-463c-8f5e-d20a95675f2c'
+  dockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
   imageRepository: 'favoritebeer'
-  containerRegistry: 'jmeisnertestacr.azurecr.io'
+  containerRegistry: 'jmeisnertestaks.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
   helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
   valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
-  aksServiceConnection: 'd096e26f-577c-4fe9-9ec0-56c53100cec5'
+  aksServiceConnection: 'f93da705-ddd0-43c1-9b08-abeaf2e0546b'
   tag: '$(Build.BuildId)'
   latestTag: '$(Build.SourceBranchName)-latest'
   releaseName: 'demo'
