@@ -28,7 +28,6 @@ variables:
 
 stages:
 - stage: Build
-  condition: "!contains(github.event.head_commit.message, '[ci skip]') && !contains(github.event.head_commit.message, '[skip ci]') && !contains(github.event.pull_request.title, '[skip ci]') && !contains(github.event.pull_request.title, '[ci skip]')"
   displayName: Build and push stage
   jobs:  
   - job: Build
