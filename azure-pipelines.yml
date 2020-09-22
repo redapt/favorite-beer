@@ -19,6 +19,7 @@ variables:
   valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
   aksServiceConnection: 'f93da705-ddd0-43c1-9b08-abeaf2e0546b'
   tag: '$(Build.BuildId)'
+  buildVersion: '0.0.0'
   latestTag: '$(Build.SourceBranchName)-latest'
   releaseName: 'demo'
   
@@ -34,6 +35,12 @@ stages:
     pool:
       vmImage: $(vmImageName)
     steps:
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: |
+          $version = [IO.File]::ReadAllText(".\VERSION")
+          Write-Output "##vso[task.setvariable variable=buildVersion]$version"
     - task: Docker@2
       displayName: Build and push an image to container registry
       inputs:
@@ -45,6 +52,7 @@ stages:
         tags: |
           $(tag)
           $(latestTag)
+          $(version)
 
 - stage: Deploy
   displayName: Deploy to Cluster
