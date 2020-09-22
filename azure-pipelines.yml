@@ -42,7 +42,7 @@ variables:
 
 stages:
 - stage: Build
-  condition: and(succeeded('Build'), eq(variables['Build.Reason'], 'PullRequest'), contains(variables['Build.SourceBranchName'], 'feature'))
+  condition: and(succeeded('Build'), eq(variables['Build.Reason'], 'PullRequest'), contains(variables['Build.SourceBranch'], 'feature'), eq(variables['Build.TargetBranch'], 'master'))
   displayName: Build and Push to Dev ACR
   jobs:  
   - job: Build
