@@ -52,7 +52,7 @@ stages:
         tags: |
           $(tag)
           $(latestTag)
-          $(version)
+          $(buildVersion)
 
 - stage: Deploy
   displayName: Deploy to Cluster
