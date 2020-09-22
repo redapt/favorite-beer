@@ -22,7 +22,8 @@ variables:
   buildVersion: '0.0.0'
   latestTag: '$(Build.SourceBranchName)-latest'
   releaseName: 'demo'
-  
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
+
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
