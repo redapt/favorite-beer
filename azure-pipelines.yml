@@ -27,6 +27,7 @@ variables:
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
   helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
   helmChartName: favorite-beer
+  helmChartVersion: 1.0.0
   tag: '$(Build.BuildId)'
   buildVersionMajor: '0'
   buildVersionMinor: '0'
@@ -120,7 +121,7 @@ stages:
         command: upgrade
         overrideValues: 'image.repository=$(devImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
         chartType: FilePath
-        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId).tgz
+        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(helmChartVersion).tgz
         valueFile: $(devValueFilePath)
         releaseName: $(devReleaseName)
         namespace: $(devReleaseNamespace)
@@ -183,7 +184,7 @@ stages:
         command: upgrade
         overrideValues: 'image.repository=$(testImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
         chartType: FilePath
-        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId).tgz
+        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(helmChartVersion).tgz
         valueFile: $(testValueFilePath)
         releaseName: $(testReleaseName)
         namespace: $(testReleaseNamespace)
