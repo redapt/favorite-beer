@@ -25,20 +25,18 @@ variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
   imageRepository: 'favoritebeer'
-  containerRegistry: 'jmeisnertestaks.azurecr.io'
+  imageRegistry: 'jmeisnertestaks.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
   helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
   valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
   aksServiceConnection: 'f93da705-ddd0-43c1-9b08-abeaf2e0546b'
   tag: '$(Build.BuildId)'
-  buildVersion: '0.0.0'
   buildVersionMajor: '0'
   buildVersionMinor: '0'
   buildVersionPatch: '0'
   latestTag: '$(Build.SourceBranchName)-latest'
   releaseName: 'demo'
-  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -52,6 +50,29 @@ stages:
     pool:
       vmImage: $(vmImageName)
     steps:
+    - checkout: self
+      persistCredentials: true
+    - task: Docker@2
+      displayName: Login to ACR
+      inputs:
+        command: login
+        containerRegistry: $(dockerRegistryServiceConnection)
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        workingDirectory: $(Build.SourcesDirectory)
+        script: |
+          $version = [IO.File]::ReadAllText("VERSION")
+          $versionParts = $version.TrimEnd("*-").Split(".")
+          $currentMajor = [Convert]::ToInt32($versionParts[0])
+          $currentMinor = [Convert]::ToInt32($versionParts[1])
+          $currentPatch = [Convert]::ToInt32($versionParts[2])
+          $version = $currentMajor.ToString() + '.' + $currentMinor.ToString() + '.' + $currentPatch.ToString()
+          $dockerImage = $env:IMAGEREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version
+          $dockerImageRC = $dockerImage
+          docker pull $dockerImageRC
+          docker tag $dockerImageRC $dockerImage
+          docker push $dockerImage
     - template: azure-pipelines/bumpVersion.yml
 
 - stage: Build
@@ -75,7 +96,7 @@ stages:
         tags: |
           $(tag)
           $(latestTag)
-          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)
+          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc
 
 - stage: Deploy
   condition: succeeded('Build')
@@ -99,7 +120,7 @@ stages:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(aksServiceConnection)
         command: upgrade
-        overrideValues: 'image.repository=$(containerRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)'
+        overrideValues: 'image.repository=$(imageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc'
         chartType: FilePath
         chartPath: $(helmChartPath)
         valueFile: $(valueFilePath)
