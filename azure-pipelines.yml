@@ -9,15 +9,15 @@ trigger:
     include:
     - master
     - release
-    - feature/*
-    - hotfix/*
+    # - feature/*
+    # - hotfix/*
 
 pr:
   autoCancel: true
   branches:
     include:
-    - feature/*
-    - hotfix/*
+    - master
+    - release
 
 resources:
 - repo: self
