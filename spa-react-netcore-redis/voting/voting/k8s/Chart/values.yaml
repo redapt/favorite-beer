@@ -17,7 +17,7 @@ ports:
 servicesettings: |-
   {
     "ServiceSettings": {
-      "Beers": ["Test Beer 1", "Test Beer 2", "Test Beer 3", "Test Beer 4"]
+      "Beers": ["Test Beer 1", "Test Beer 2", "Test Beer 3", "Test Beer 4", "Test Beer 5"]
     }
   }
 

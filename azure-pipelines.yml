@@ -14,8 +14,7 @@ pr:
   autoCancel: true
   branches:
     include:
-    - feature/*
-    - hotfix/*
+    - release
 
 resources:
 - repo: self
@@ -24,17 +23,43 @@ variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
   imageRepository: 'favoritebeer'
-  imageRegistry: 'jmeisnertestaks.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
   helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
-  valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
-  aksServiceConnection: 'f93da705-ddd0-43c1-9b08-abeaf2e0546b'
+  helmChartName: favorite-beer
+  helmChartVersion: 1.0.0
   tag: '$(Build.BuildId)'
   buildVersionMajor: '0'
   buildVersionMinor: '0'
   buildVersionPatch: '0'
-  releaseName: 'demo'
+
+  # imageRegistry: 'jmeisnertestaks.azurecr.io'
+  # dockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
+  # aksServiceConnection: 'f93da705-ddd0-43c1-9b08-abeaf2e0546b'
+  # valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
+  # releaseName: 'demo'
+  # releaseNamespace: 'default'
+
+  devImageRegistry: 'jmeisnertestaks.azurecr.io'
+  devDockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
+  devAksServiceConnection: '63fe72b1-d136-4e40-ba91-6cf0944bc447'
+  devValueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
+  devReleaseName: 'dev'
+  devReleaseNamespace: 'dev'
+
+  testImageRegistry: 'jmeisnertestaks.azurecr.io'
+  testDockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
+  testAksServiceConnection: '2145492d-dcc9-499a-b400-3c2b0bfb79e6'
+  testValueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/atlanta-values.yaml'
+  testReleaseName: 'test'
+  testReleaseNamespace: 'test'
+
+  prodImageRegistry: 'jmeisnertestaks.azurecr.io'
+  prodDockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
+  prodAksServiceConnection: 'c608f1b5-7ad2-4acc-a32e-575a01b68f2d'
+  prodValueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/atlanta-values.yaml'
+  prodReleaseName: 'prod'
+  prodReleaseNamespace: 'prod'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -42,8 +67,8 @@ variables:
 
 
 stages:
-- stage: Build
-  condition: and(eq(variables['Build.Reason'], 'PullRequest'), or(contains(variables['System.PullRequest.SourceBranch'], 'feature/'), contains(variables['System.PullRequest.SourceBranch'], 'hotfix/')), eq(variables['System.PullRequest.TargetBranch'], 'master'))
+- stage: BuildDev
+  condition: and(eq(variables['Build.Reason'], 'PullRequest'), or(contains(variables['System.PullRequest.SourceBranch'], 'feature/'), contains(variables['System.PullRequest.SourceBranch'], 'hotfix/')), eq(variables['System.PullRequest.TargetBranch'], 'release'))
   displayName: Build and Push to Dev ACR
   jobs:  
   - job: Build
@@ -53,20 +78,19 @@ stages:
     steps:
     - template: azure-pipelines/getVersion.yml
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: Build for Dev
       inputs:
         command: buildAndPush
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
+        containerRegistry: $(devDockerRegistryServiceConnection)
         buildContext: $(buildContextPath)
         tags: |
           $(tag)
-          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc
           $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
 
-- stage: Deploy
-  condition: succeeded('Build')
+- stage: DeployDev
+  condition: succeeded('BuildDev')
   displayName: Deploy to Dev Cluster
   jobs:  
   - job: Deploy
@@ -77,28 +101,99 @@ stages:
     - template: azure-pipelines/getVersion.yml
 
     - task: HelmInstaller@1
-      displayName: Helm installer
+      displayName: Helm Installer
       inputs: 
         helmVersionToInstall: 3.0.2
 
     - task: HelmDeploy@0
-      displayName: Deploy to Demo
+      displayName: Helm package
+      inputs:
+        command: package
+        chartPath: $(helmChartPath)
+        destination: $(Build.ArtifactStagingDirectory)
+        arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+
+    - task: HelmDeploy@0
+      displayName: Deploy to Dev
       inputs:
         connectionType: Kubernetes Service Connection
-        kubernetesServiceEndpoint: $(aksServiceConnection)
+        kubernetesServiceEndpoint: $(devAksServiceConnection)
         command: upgrade
-        overrideValues: 'image.repository=$(imageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
+        overrideValues: 'image.repository=$(devImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
         chartType: FilePath
-        chartPath: $(helmChartPath)
-        valueFile: $(valueFilePath)
-        releaseName: $(releaseName)
+        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(helmChartVersion).tgz
+        valueFile: $(devValueFilePath)
+        releaseName: $(devReleaseName)
+        namespace: $(devReleaseNamespace)
         install: true
         failOnStderr: false
 
 
-- stage: Update Release Build Version
+- stage: BuildRelease
   condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'release'))
-  displayName: Promote to Release
+  displayName: Build and Push to Test ACR
+  jobs:  
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - template: azure-pipelines/getVersion.yml
+    - task: Docker@2
+      displayName: Build for Test
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(testDockerRegistryServiceConnection)
+        buildContext: $(buildContextPath)
+        tags: |
+          $(tag)
+          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc
+          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+
+- stage: DeployReleaseToTest
+  condition: succeeded('BuildRelease')
+  displayName: Deploy to Test Cluster
+  jobs:  
+  - job: Deploy
+    displayName: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - template: azure-pipelines/getVersion.yml
+
+    - task: HelmInstaller@1
+      displayName: Helm Installer
+      inputs: 
+        helmVersionToInstall: 3.0.2
+
+    - task: HelmDeploy@0
+      displayName: Helm package
+      inputs:
+        command: package
+        chartPath: $(helmChartPath)
+        destination: $(Build.ArtifactStagingDirectory)
+        arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+
+    - task: HelmDeploy@0
+      displayName: Deploy to Test
+      inputs:
+        connectionType: Kubernetes Service Connection
+        kubernetesServiceEndpoint: $(testAksServiceConnection)
+        command: upgrade
+        overrideValues: 'image.repository=$(testImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
+        chartType: FilePath
+        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(helmChartVersion).tgz
+        valueFile: $(testValueFilePath)
+        releaseName: $(testReleaseName)
+        namespace: $(testReleaseNamespace)
+        install: true
+        failOnStderr: false
+
+- stage: PromoteRelease
+  condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'master'))
+  displayName: Update Release Build Version
   jobs:
   - job: VersionUpdate
     pool:
@@ -107,11 +202,17 @@ stages:
     - checkout: self
       persistCredentials: true
     - task: Docker@2
-      displayName: Login to ACR
+      displayName: Login to Test ACR
       inputs:
         command: login
-        containerRegistry: $(dockerRegistryServiceConnection)
+        containerRegistry: $(testDockerRegistryServiceConnection)
+    - task: Docker@2
+      displayName: Login to Prod ACR
+      inputs:
+        command: login
+        containerRegistry: $(prodDockerRegistryServiceConnection)
     - task: PowerShell@2
+      displayName: Move Image from Test ACR to Production ACR
       inputs:
         targetType: 'inline'
         workingDirectory: $(Build.SourcesDirectory)
@@ -122,8 +223,8 @@ stages:
           $currentMinor = [Convert]::ToInt32($versionParts[1])
           $currentPatch = [Convert]::ToInt32($versionParts[2])
           $version = $currentMajor.ToString() + '.' + $currentMinor.ToString() + '.' + $currentPatch.ToString()
-          $dockerImage = $env:IMAGEREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version
-          $dockerImageRC = $dockerImage + "-rc"
+          $dockerImage = $env:PRODIMAGEREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version
+          $dockerImageRC = $env:TESTIMAGEREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version + "-rc"
           docker pull $dockerImageRC
           docker tag $dockerImageRC $dockerImage
           docker push $dockerImage
