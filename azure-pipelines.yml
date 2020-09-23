@@ -17,6 +17,7 @@ pr:
   branches:
     include:
     - release
+    - master
 
 resources:
 - repo: self
@@ -195,6 +196,10 @@ stages:
 
 - stage: PromoteRelease
   condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'master'))
+  # Need a condition to check, if the merge to master was a hotfix, perhaps a git message convention
+  # or a slight re-arrangement of the tasks here, such that PRs from release and hotfix funnel in similarly.
+  # With the current content, it lends itself to hotfixing release and/or rolling back until releases can 
+  # catch back up.
   displayName: Update Release Build Version
   jobs:
   - job: VersionUpdate
@@ -259,3 +264,68 @@ stages:
         namespace: $(prodReleaseNamespace)
         install: true
         failOnStderr: false
+
+# ## Work In progress for the hotfix strategy.
+#
+#
+# - stage: BuildHotfix
+#   condition: and(eq(variables['Build.Reason'], 'PullRequest'), contains(variables['System.PullRequest.SourceBranch'], 'hotfix/'), eq(variables['System.PullRequest.TargetBranch'], 'master'))
+#   displayName: Build HotFix and Push to Test ACR
+#   jobs:  
+#   - job: Build
+#     displayName: Build
+#     pool:
+#       vmImage: $(vmImageName)
+#     steps:
+#     - template: azure-pipelines/getVersion.yml
+#     - task: Docker@2
+#       displayName: Build for Test
+#       inputs:
+#         command: buildAndPush
+#         repository: $(imageRepository)
+#         dockerfile: $(dockerfilePath)
+#         containerRegistry: $(testDockerRegistryServiceConnection)
+#         buildContext: $(buildContextPath)
+#         tags: |
+#           $(tag)
+#           $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-hf
+#           $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-hf$(Build.BuildId)
+
+# - stage: DeployHotfixToTest
+#   condition: succeeded('BuildHotfix')
+#   displayName: Deploy HotFix to Test Cluster
+#   jobs:  
+#   - job: Deploy
+#     displayName: Deploy
+#     pool:
+#       vmImage: $(vmImageName)
+#     steps:
+#     - template: azure-pipelines/getVersion.yml
+
+#     - task: HelmInstaller@1
+#       displayName: Helm Installer
+#       inputs: 
+#         helmVersionToInstall: 3.0.2
+
+#     - task: HelmDeploy@0
+#       displayName: Helm package
+#       inputs:
+#         command: package
+#         chartPath: $(helmChartPath)
+#         destination: $(Build.ArtifactStagingDirectory)
+#         arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-hf$(Build.BuildId)
+
+#     - task: HelmDeploy@0
+#       displayName: Deploy to Test
+#       inputs:
+#         connectionType: Kubernetes Service Connection
+#         kubernetesServiceEndpoint: $(testAksServiceConnection)
+#         command: upgrade
+#         overrideValues: 'image.repository=$(testImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-hf$(Build.BuildId)'
+#         chartType: FilePath
+#         chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(helmChartVersion).tgz
+#         valueFile: $(testValueFilePath)
+#         releaseName: $(testReleaseName)
+#         namespace: $(testReleaseNamespace)
+#         install: true
+#         failOnStderr: false
