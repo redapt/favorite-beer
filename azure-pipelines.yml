@@ -98,9 +98,9 @@ stages:
         failOnStderr: false
 
 
-- stage: Update Release Build Version
+- stage: PromoteRelease
   condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'release'))
-  displayName: Promote to Release
+  displayName: Update Release Build Version
   jobs:
   - job: VersionUpdate
     pool:
