@@ -59,26 +59,12 @@ stages:
     - task: PowerShell@2
       inputs:
         targetType: 'inline'
-        env:
-          containerRegistry: $(containerRegistry)
-          imageRepository: $(imageRepository)
         script: |
           $version = [IO.File]::ReadAllText("VERSION")
           docker pull $env:containerRegistry/$env:imageRepository:$version
-          docker tag $env:containerRegistry/$env:imageRepository:$version release-candidate
-
-    - template: azure-pipelines/bumpVersion.yml
-
-    - task: PowerShell@2
-      inputs:
-        targetType: 'inline'
-        env:
-          containerRegistry: $(containerRegistry)
-          imageRepository: $(imageRepository)
-        script: |
-          $version = [IO.File]::ReadAllText("VERSION")
-          docker tag release-candidate $env:containerRegistry/$env:imageRepository:$version
+          docker tag $env:containerRegistry/$env:imageRepository:$version-rc $env:containerRegistry/$env:imageRepository:$version
           docker push $env:containerRegistry/$env:imageRepository:$version
+    - template: azure-pipelines/bumpVersion.yml
 
 
 - stage: Build
