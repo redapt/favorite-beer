@@ -33,6 +33,9 @@ variables:
   aksServiceConnection: 'f93da705-ddd0-43c1-9b08-abeaf2e0546b'
   tag: '$(Build.BuildId)'
   buildVersion: '0.0.0'
+  buildVersionMajor: '0'
+  buildVersionMinor: '0'
+  buildVersionPatch: '0'
   latestTag: '$(Build.SourceBranchName)-latest'
   releaseName: 'demo'
   isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
@@ -41,6 +44,42 @@ variables:
   vmImageName: 'ubuntu-latest'
 
 stages:
+- stage: GitOps
+  condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'master'))
+  displayName: Git operations.
+  jobs:
+  - job: VersionUpdate
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: |
+          $version = [IO.File]::ReadAllText("VERSION")
+          Write-Output "##vso[task.setvariable variable=buildVersion]$version"
+          $versionParts = $currentVersion.TrimEnd("*-").Split(".")
+          $currentMajor = [Convert]::ToInt32($versionParts[0])
+          $currentMinor = [Convert]::ToInt32($versionParts[1])
+          $currentPatch = [Convert]::ToInt32($versionParts[2])
+          $currentPatch++
+          Write-Output "##vso[task.setvariable variable=buildVersionMajor]$currentMajor"
+          Write-Output "##vso[task.setvariable variable=buildVersionMinor]$currentMinor"
+          Write-Output "##vso[task.setvariable variable=buildVersionPatch]$currentPatch"
+
+    - task: PowerShell@2
+      inputs:
+        targetType: 'inline'
+        script: |
+          $version = [IO.File]::ReadAllText("VERSION")
+          git config --global user.email "system-azure-devops@redapt.com"
+          git config --global user.name "System"
+          git status
+          git add VERSION
+
+          git commit -m "[skip ci] Update version numbers for Build %version%"
+          git push origin master
+
 - stage: Build
   condition: and(eq(variables['Build.Reason'], 'PullRequest'), contains(variables['System.PullRequest.SourceBranch'], 'feature'), eq(variables['System.PullRequest.TargetBranch'], 'master'))
   displayName: Build and Push to Dev ACR
@@ -55,7 +94,13 @@ stages:
         targetType: 'inline'
         script: |
           $version = [IO.File]::ReadAllText("VERSION")
-          Write-Output "##vso[task.setvariable variable=buildVersion]$version"
+          $versionParts = $version.TrimEnd("*-").Split(".")
+          $currentMajor = [Convert]::ToInt32($versionParts[0])
+          $currentMinor = [Convert]::ToInt32($versionParts[1])
+          $currentPatch = [Convert]::ToInt32($versionParts[2])
+          Write-Output "##vso[task.setvariable variable=buildVersionMajor]$currentMajor"
+          Write-Output "##vso[task.setvariable variable=buildVersionMinor]$currentMinor"
+          Write-Output "##vso[task.setvariable variable=buildVersionPatch]$currentPatch"
     - task: Docker@2
       displayName: Build and push an image to container registry
       inputs:
@@ -67,7 +112,7 @@ stages:
         tags: |
           $(tag)
           $(latestTag)
-          $(buildVersion)
+          '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)'
 
 - stage: Deploy
   condition: succeeded('Build')
