@@ -14,8 +14,7 @@ pr:
   autoCancel: true
   branches:
     include:
-    - feature/*
-    - hotfix/*
+    - release
 
 resources:
 - repo: self
@@ -28,13 +27,23 @@ variables:
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
   helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
-  valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
   aksServiceConnection: 'f93da705-ddd0-43c1-9b08-abeaf2e0546b'
   tag: '$(Build.BuildId)'
   buildVersionMajor: '0'
   buildVersionMinor: '0'
   buildVersionPatch: '0'
+
+  valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
   releaseName: 'demo'
+  releaseNamespace: 'default'
+
+  devValueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
+  devReleaseName: 'demo'
+  devReleaseNamespace: 'default'
+
+  testValueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/atlanta-values.yaml'
+  testReleaseName: 'test'
+  testReleaseNamespace: 'test'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -42,8 +51,8 @@ variables:
 
 
 stages:
-- stage: Build
-  condition: and(eq(variables['Build.Reason'], 'PullRequest'), or(contains(variables['System.PullRequest.SourceBranch'], 'feature/'), contains(variables['System.PullRequest.SourceBranch'], 'hotfix/')), eq(variables['System.PullRequest.TargetBranch'], 'master'))
+- stage: BuildDev
+  condition: and(eq(variables['Build.Reason'], 'PullRequest'), or(contains(variables['System.PullRequest.SourceBranch'], 'feature/'), contains(variables['System.PullRequest.SourceBranch'], 'hotfix/')), eq(variables['System.PullRequest.TargetBranch'], 'release'))
   displayName: Build and Push to Dev ACR
   jobs:  
   - job: Build
@@ -62,11 +71,10 @@ stages:
         buildContext: $(buildContextPath)
         tags: |
           $(tag)
-          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc
           $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
 
-- stage: Deploy
-  condition: succeeded('Build')
+- stage: DeployDev
+  condition: succeeded('BuildDev')
   displayName: Deploy to Dev Cluster
   jobs:  
   - job: Deploy
@@ -90,15 +98,70 @@ stages:
         overrideValues: 'image.repository=$(imageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
         chartType: FilePath
         chartPath: $(helmChartPath)
-        valueFile: $(valueFilePath)
-        releaseName: $(releaseName)
+        valueFile: $(devValueFilePath)
+        releaseName: $(devReleaseName)
+        namespace: $(devReleaseNamespace)
         install: true
         failOnStderr: false
 
 
-- stage: Update Release Build Version
+- stage: BuildRelease
   condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'release'))
-  displayName: Promote to Release
+  displayName: Build and Push to Test ACR
+  jobs:  
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - template: azure-pipelines/getVersion.yml
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        buildContext: $(buildContextPath)
+        tags: |
+          $(tag)
+          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc
+          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+
+- stage: DeployReleaseToTest
+  condition: succeeded('BuildRelease')
+  displayName: Deploy to Test Cluster
+  jobs:  
+  - job: Deploy
+    displayName: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - template: azure-pipelines/getVersion.yml
+
+    - task: HelmInstaller@1
+      displayName: Helm installer
+      inputs: 
+        helmVersionToInstall: 3.0.2
+
+    - task: HelmDeploy@0
+      displayName: Deploy to Demo
+      inputs:
+        connectionType: Kubernetes Service Connection
+        kubernetesServiceEndpoint: $(aksServiceConnection)
+        command: upgrade
+        overrideValues: 'image.repository=$(imageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
+        chartType: FilePath
+        chartPath: $(helmChartPath)
+        valueFile: $(testValueFilePath)
+        releaseName: $(testReleaseName)
+        namespace: $(testReleaseNamespace)
+        install: true
+        failOnStderr: false
+
+- stage: PromoteRelease
+  condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'master'))
+  displayName: Update Release Build Version
   jobs:
   - job: VersionUpdate
     pool:
