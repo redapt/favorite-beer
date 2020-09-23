@@ -4,6 +4,7 @@ steps:
 - task: PowerShell@2
   inputs:
     targetType: 'inline'
+    workingDirectory: $(Build.SourcesDirectory)
     script: |
       git checkout -b master
       git config --global user.email "system-azure-devops@redapt.com"
