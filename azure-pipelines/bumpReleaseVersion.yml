@@ -5,6 +5,7 @@ steps:
     targetType: 'inline'
     workingDirectory: $(Build.SourcesDirectory)
     script: |
+      $currentBranch = &git branch --show-current
       git checkout -b release
       git config --global user.email "system-azure-devops@redapt.com"
       git config --global user.name "System"
@@ -26,3 +27,4 @@ steps:
       git add VERSION
       git commit -m "Update version numbers for Build $version"
       git push origin release
+      git checkout $currentBranch

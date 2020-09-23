@@ -246,7 +246,7 @@ stages:
         arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)
 
     - task: HelmDeploy@0
-      displayName: Deploy to Test
+      displayName: Deploy to Prod
       inputs:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(prodAksServiceConnection)
