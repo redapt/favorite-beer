@@ -9,6 +9,8 @@ trigger:
     include:
     - master
     - release
+    - feature/*
+    - hotfix/*
 
 pr:
   autoCancel: true
