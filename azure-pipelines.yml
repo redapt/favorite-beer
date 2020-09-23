@@ -40,6 +40,9 @@ variables:
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
+
+name: $(Build.BuildId)_$(Date:yyyyMMdd).$(Rev:r)
+
 stages:
 - stage: GitOps
   condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'master'))
