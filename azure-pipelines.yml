@@ -107,7 +107,7 @@ stages:
 
 - stage: BuildRelease
   condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'release'))
-  displayName: Build and Push to Dev ACR
+  displayName: Build and Push to Test ACR
   jobs:  
   - job: Build
     displayName: Build
@@ -130,7 +130,7 @@ stages:
 
 - stage: DeployReleaseToTest
   condition: succeeded('BuildRelease')
-  displayName: Deploy to Dev Cluster
+  displayName: Deploy to Test Cluster
   jobs:  
   - job: Deploy
     displayName: Deploy
