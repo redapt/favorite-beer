@@ -6,7 +6,7 @@
 servicesettings: |-
   {
     "ServiceSettings": {
-      "Beers": ["Sweetwater", "Budweiser", "Beer 3", "Reformation"]
+      "Beers": ["Sweetwater", "Budweiser", "Beer 3", "Reformation", "Test 5"]
     }
   }
 
