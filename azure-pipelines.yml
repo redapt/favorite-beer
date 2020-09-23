@@ -99,12 +99,12 @@ stages:
     - template: azure-pipelines/getVersion.yml
 
     - task: HelmInstaller@1
-      displayName: Helm installer
+      displayName: Helm Installer
       inputs: 
         helmVersionToInstall: 3.0.2
 
     - task: HelmDeploy@0
-      displayName: Deploy to Demo
+      displayName: Deploy to Dev
       inputs:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(devAksServiceConnection)
@@ -154,12 +154,12 @@ stages:
     - template: azure-pipelines/getVersion.yml
 
     - task: HelmInstaller@1
-      displayName: Helm installer
+      displayName: Helm Installer
       inputs: 
         helmVersionToInstall: 3.0.2
 
     - task: HelmDeploy@0
-      displayName: Deploy to Demo
+      displayName: Deploy to Test
       inputs:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(testAksServiceConnection)
@@ -194,6 +194,7 @@ stages:
         command: login
         containerRegistry: $(prodDockerRegistryServiceConnection)
     - task: PowerShell@2
+      displayName: Move Image from Test ACR to Production ACR
       inputs:
         targetType: 'inline'
         workingDirectory: $(Build.SourcesDirectory)
