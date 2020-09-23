@@ -35,7 +35,6 @@ variables:
   buildVersionMajor: '0'
   buildVersionMinor: '0'
   buildVersionPatch: '0'
-  latestTag: '$(Build.SourceBranchName)-latest'
   releaseName: 'demo'
 
   # Agent VM image name
@@ -95,7 +94,7 @@ stages:
         buildContext: $(buildContextPath)
         tags: |
           $(tag)
-          $(latestTag)
+          $(System.PullRequest.SourceBranch)-latest
           $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc
 
 - stage: Deploy
