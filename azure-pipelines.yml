@@ -3,7 +3,20 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
 trigger:
-- master
+  branches:
+    include:
+    - master
+    - feature/*
+    - releases/*
+    exclude:
+    - releases/old*
+
+pr:
+  autoCancel: true
+  branches:
+    include:
+    - master
+    - feature/*
 
 resources:
 - repo: self
@@ -20,6 +33,9 @@ variables:
   aksServiceConnection: 'f93da705-ddd0-43c1-9b08-abeaf2e0546b'
   tag: '$(Build.BuildId)'
   buildVersion: '0.0.0'
+  buildVersionMajor: '0'
+  buildVersionMinor: '0'
+  buildVersionPatch: '0'
   latestTag: '$(Build.SourceBranchName)-latest'
   releaseName: 'demo'
   isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
@@ -28,20 +44,26 @@ variables:
   vmImageName: 'ubuntu-latest'
 
 stages:
+- stage: GitOps
+  condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'master'))
+  displayName: Git operations.
+  jobs:
+  - job: VersionUpdate
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - template: azure-pipelines/bumpVersion.yml
+
 - stage: Build
-  displayName: Build and push stage
+  condition: and(eq(variables['Build.Reason'], 'PullRequest'), contains(variables['System.PullRequest.SourceBranch'], 'feature'), eq(variables['System.PullRequest.TargetBranch'], 'master'))
+  displayName: Build and Push to Dev ACR
   jobs:  
   - job: Build
     displayName: Build
     pool:
       vmImage: $(vmImageName)
     steps:
-    - task: PowerShell@2
-      inputs:
-        targetType: 'inline'
-        script: |
-          $version = [IO.File]::ReadAllText("VERSION")
-          Write-Output "##vso[task.setvariable variable=buildVersion]$version"
+    - template: azure-pipelines/getVersion.yml
     - task: Docker@2
       displayName: Build and push an image to container registry
       inputs:
@@ -53,32 +75,31 @@ stages:
         tags: |
           $(tag)
           $(latestTag)
-          $(buildVersion)
+          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)
 
 - stage: Deploy
   condition: succeeded('Build')
-  displayName: Deploy to Cluster
+  displayName: Deploy to Dev Cluster
   jobs:  
   - job: Deploy
     displayName: Deploy
     pool:
       vmImage: $(vmImageName)
     steps:
+    - template: azure-pipelines/getVersion.yml
 
     - task: HelmInstaller@1
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
       displayName: Helm installer
       inputs: 
         helmVersionToInstall: 3.0.2
 
     - task: HelmDeploy@0
-      condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/master'))
       displayName: Deploy to Demo
       inputs:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(aksServiceConnection)
         command: upgrade
-        overrideValues: 'image.repository=$(containerRegistry)/$(imageRepository),image.tag=$(tag)'
+        overrideValues: 'image.repository=$(containerRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)'
         chartType: FilePath
         chartPath: $(helmChartPath)
         valueFile: $(valueFilePath)

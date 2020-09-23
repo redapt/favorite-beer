@@ -1,0 +1,13 @@
+steps:
+- task: PowerShell@2
+  inputs:
+    targetType: 'inline'
+    script: |
+      $version = [IO.File]::ReadAllText("VERSION")
+      $versionParts = $version.TrimEnd("*-").Split(".")
+      $currentMajor = [Convert]::ToInt32($versionParts[0])
+      $currentMinor = [Convert]::ToInt32($versionParts[1])
+      $currentPatch = [Convert]::ToInt32($versionParts[2])
+      Write-Output "##vso[task.setvariable variable=buildVersionMajor]$currentMajor"
+      Write-Output "##vso[task.setvariable variable=buildVersionMinor]$currentMinor"
+      Write-Output "##vso[task.setvariable variable=buildVersionPatch]$currentPatch"
