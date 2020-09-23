@@ -26,6 +26,8 @@ variables:
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
   helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
+  helmChartName: favorite-beer
+  helmChartVersion: 1.0.0
   tag: '$(Build.BuildId)'
   buildVersionMajor: '0'
   buildVersionMinor: '0'
@@ -76,7 +78,7 @@ stages:
     steps:
     - template: azure-pipelines/getVersion.yml
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: Build for Dev
       inputs:
         command: buildAndPush
         repository: $(imageRepository)
@@ -99,19 +101,27 @@ stages:
     - template: azure-pipelines/getVersion.yml
 
     - task: HelmInstaller@1
-      displayName: Helm installer
+      displayName: Helm Installer
       inputs: 
         helmVersionToInstall: 3.0.2
 
     - task: HelmDeploy@0
-      displayName: Deploy to Demo
+      displayName: Helm package
+      inputs:
+        command: package
+        chartPath: $(helmChartPath)
+        destination: $(Build.ArtifactStagingDirectory)
+        arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+
+    - task: HelmDeploy@0
+      displayName: Deploy to Dev
       inputs:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(devAksServiceConnection)
         command: upgrade
         overrideValues: 'image.repository=$(devImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
         chartType: FilePath
-        chartPath: $(helmChartPath)
+        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(helmChartVersion).tgz
         valueFile: $(devValueFilePath)
         releaseName: $(devReleaseName)
         namespace: $(devReleaseNamespace)
@@ -130,7 +140,7 @@ stages:
     steps:
     - template: azure-pipelines/getVersion.yml
     - task: Docker@2
-      displayName: Build and push an image to container registry
+      displayName: Build for Test
       inputs:
         command: buildAndPush
         repository: $(imageRepository)
@@ -154,19 +164,27 @@ stages:
     - template: azure-pipelines/getVersion.yml
 
     - task: HelmInstaller@1
-      displayName: Helm installer
+      displayName: Helm Installer
       inputs: 
         helmVersionToInstall: 3.0.2
 
     - task: HelmDeploy@0
-      displayName: Deploy to Demo
+      displayName: Helm package
+      inputs:
+        command: package
+        chartPath: $(helmChartPath)
+        destination: $(Build.ArtifactStagingDirectory)
+        arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+
+    - task: HelmDeploy@0
+      displayName: Deploy to Test
       inputs:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(testAksServiceConnection)
         command: upgrade
         overrideValues: 'image.repository=$(testImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
         chartType: FilePath
-        chartPath: $(helmChartPath)
+        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(helmChartVersion).tgz
         valueFile: $(testValueFilePath)
         releaseName: $(testReleaseName)
         namespace: $(testReleaseNamespace)
@@ -194,6 +212,7 @@ stages:
         command: login
         containerRegistry: $(prodDockerRegistryServiceConnection)
     - task: PowerShell@2
+      displayName: Move Image from Test ACR to Production ACR
       inputs:
         targetType: 'inline'
         workingDirectory: $(Build.SourcesDirectory)
