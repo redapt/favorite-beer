@@ -9,7 +9,9 @@ trigger:
     include:
     - master
     - release
-
+  paths:
+    exclude:
+    - VERSION
 pr:
   autoCancel: true
   branches:
