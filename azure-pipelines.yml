@@ -37,7 +37,6 @@ variables:
   buildVersionPatch: '0'
   latestTag: '$(Build.SourceBranchName)-latest'
   releaseName: 'demo'
-  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/master')]
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -51,7 +50,8 @@ stages:
     pool:
       vmImage: $(vmImageName)
     steps:
-    - checkout: self
+    - template: azure-pipelines/getVersion.yml
+
     - task: Docker@2
       displayName: Login to ACR
       inputs:
@@ -61,10 +61,11 @@ stages:
       inputs:
         targetType: 'inline'
         script: |
-          $version = [IO.File]::ReadAllText("VERSION")
+          $version = $env:buildVersionMajor + '.' + $env:buildVersionMinor + '.' + $env:buildVersionPatch + '-rc'
           docker pull $env:containerRegistry/$env:imageRepository:$version
           docker tag $env:containerRegistry/$env:imageRepository:$version-rc $env:containerRegistry/$env:imageRepository:$version
           docker push $env:containerRegistry/$env:imageRepository:$version
+
     - template: azure-pipelines/bumpVersion.yml
 
 
