@@ -26,6 +26,7 @@ variables:
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
   helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
+  helmChartName: favorite-beer
   tag: '$(Build.BuildId)'
   buildVersionMajor: '0'
   buildVersionMinor: '0'
@@ -104,6 +105,14 @@ stages:
         helmVersionToInstall: 3.0.2
 
     - task: HelmDeploy@0
+      displayName: Helm package
+      inputs:
+        command: package
+        chartPath: $(helmChartPath)
+        destination: $(Build.ArtifactStagingDirectory)
+        arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+
+    - task: HelmDeploy@0
       displayName: Deploy to Dev
       inputs:
         connectionType: Kubernetes Service Connection
@@ -111,7 +120,7 @@ stages:
         command: upgrade
         overrideValues: 'image.repository=$(devImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
         chartType: FilePath
-        chartPath: $(helmChartPath)
+        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId).tgz
         valueFile: $(devValueFilePath)
         releaseName: $(devReleaseName)
         namespace: $(devReleaseNamespace)
@@ -159,6 +168,14 @@ stages:
         helmVersionToInstall: 3.0.2
 
     - task: HelmDeploy@0
+      displayName: Helm package
+      inputs:
+        command: package
+        chartPath: $(helmChartPath)
+        destination: $(Build.ArtifactStagingDirectory)
+        arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+
+    - task: HelmDeploy@0
       displayName: Deploy to Test
       inputs:
         connectionType: Kubernetes Service Connection
@@ -166,7 +183,7 @@ stages:
         command: upgrade
         overrideValues: 'image.repository=$(testImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
         chartType: FilePath
-        chartPath: $(helmChartPath)
+        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId).tgz
         valueFile: $(testValueFilePath)
         releaseName: $(testReleaseName)
         namespace: $(testReleaseNamespace)
