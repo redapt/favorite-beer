@@ -17,7 +17,8 @@ pr:
   branches:
     include:
     - release
-    - master
+# Master branch is needed for PRs directly from Hotfix, still WIP.
+#    - master
 
 resources:
 - repo: self
