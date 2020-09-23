@@ -69,7 +69,7 @@ stages:
           $currentPatch = [Convert]::ToInt32($versionParts[2])
           $version = $currentMajor.ToString() + '.' + $currentMinor.ToString() + '.' + $currentPatch.ToString()
           $dockerImage = $env:IMAGEREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version
-          $dockerImageRC = $dockerImage
+          $dockerImageRC = $dockerImage + "-rc"
           docker pull $dockerImageRC
           docker tag $dockerImageRC $dockerImage
           docker push $dockerImage
