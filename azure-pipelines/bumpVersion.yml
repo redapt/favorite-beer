@@ -17,7 +17,7 @@ steps:
       Write-Output "##vso[task.setvariable variable=buildVersionMajor]$currentMajor"
       Write-Output "##vso[task.setvariable variable=buildVersionMinor]$currentMinor"
       Write-Output "##vso[task.setvariable variable=buildVersionPatch]$currentPatch"
-      $version = $currentMajor + '.' + $currentMinor + '.' + $currentPatch
+      $version = $currentMajor.ToString() + '.' + $currentMinor.ToString() + '.' + $currentPatch.ToString()
       Set-Content -Path VERSION -Value $version
       git status
       git add VERSION
