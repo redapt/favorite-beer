@@ -112,7 +112,7 @@ stages:
         tags: |
           $(tag)
           $(latestTag)
-          '$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)'
+          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)
 
 - stage: Deploy
   condition: succeeded('Build')
@@ -135,7 +135,7 @@ stages:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(aksServiceConnection)
         command: upgrade
-        overrideValues: 'image.repository=$(containerRegistry)/$(imageRepository),image.tag=$(tag)'
+        overrideValues: 'image.repository=$(containerRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)'
         chartType: FilePath
         chartPath: $(helmChartPath)
         valueFile: $(valueFilePath)
