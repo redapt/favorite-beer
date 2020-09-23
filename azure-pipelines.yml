@@ -8,10 +8,6 @@ trigger:
   branches:
     include:
     - master
-    - feature/*
-    - releases/*
-    exclude:
-    - releases/old*
 
 pr:
   autoCancel: true
@@ -19,6 +15,7 @@ pr:
     include:
     - master
     - feature/*
+    - hotfix/*
 
 resources:
 - repo: self
