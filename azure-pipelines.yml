@@ -72,7 +72,7 @@ stages:
           $dockerImageRC = $dockerImage
           docker pull $dockerImageRC
           docker tag $dockerImageRC $dockerImage
-          docker push dockerImage
+          docker push $dockerImage
     - template: azure-pipelines/bumpVersion.yml
 
 - stage: Build
