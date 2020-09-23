@@ -1,5 +1,6 @@
 steps:
 - task: PowerShell@2
+  displayName: Get Current Version
   inputs:
     targetType: 'inline'
     workingDirectory: $(Build.SourcesDirectory)

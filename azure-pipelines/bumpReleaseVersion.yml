@@ -1,5 +1,6 @@
 steps:
 - task: PowerShell@2
+  displayName: Bump the Release Version
   inputs:
     targetType: 'inline'
     workingDirectory: $(Build.SourcesDirectory)
