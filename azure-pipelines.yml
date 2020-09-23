@@ -231,3 +231,31 @@ stages:
           docker tag $dockerImageRC $dockerImage
           docker push $dockerImage
     - template: azure-pipelines/bumpReleaseVersion.yml
+
+    - task: HelmInstaller@1
+      displayName: Helm Installer
+      inputs: 
+        helmVersionToInstall: 3.0.2
+
+    - task: HelmDeploy@0
+      displayName: Helm package
+      inputs:
+        command: package
+        chartPath: $(helmChartPath)
+        destination: $(Build.ArtifactStagingDirectory)
+        arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+
+    - task: HelmDeploy@0
+      displayName: Deploy to Test
+      inputs:
+        connectionType: Kubernetes Service Connection
+        kubernetesServiceEndpoint: $(prodAksServiceConnection)
+        command: upgrade
+        overrideValues: 'image.repository=$(prodImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)'
+        chartType: FilePath
+        chartPath: $(Build.ArtifactStagingDirectory)/$(helmChartName)-$(helmChartVersion).tgz
+        valueFile: $(prodValueFilePath)
+        releaseName: $(prodReleaseName)
+        namespace: $(prodReleaseNamespace)
+        install: true
+        failOnStderr: false
