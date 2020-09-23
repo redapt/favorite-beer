@@ -94,7 +94,6 @@ stages:
         buildContext: $(buildContextPath)
         tags: |
           $(tag)
-          $(System.PullRequest.SourceBranch)-latest
           $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc
 
 - stage: Deploy
