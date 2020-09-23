@@ -23,27 +23,41 @@ variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
   imageRepository: 'favoritebeer'
-  imageRegistry: 'jmeisnertestaks.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
   helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
-  aksServiceConnection: 'f93da705-ddd0-43c1-9b08-abeaf2e0546b'
   tag: '$(Build.BuildId)'
   buildVersionMajor: '0'
   buildVersionMinor: '0'
   buildVersionPatch: '0'
 
-  valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
-  releaseName: 'demo'
-  releaseNamespace: 'default'
+  # imageRegistry: 'jmeisnertestaks.azurecr.io'
+  # dockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
+  # aksServiceConnection: 'f93da705-ddd0-43c1-9b08-abeaf2e0546b'
+  # valueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
+  # releaseName: 'demo'
+  # releaseNamespace: 'default'
 
+  devImageRegistry: 'jmeisnertestaks.azurecr.io'
+  devDockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
+  devAksServiceConnection: '63fe72b1-d136-4e40-ba91-6cf0944bc447'
   devValueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart/values.yaml'
-  devReleaseName: 'demo'
-  devReleaseNamespace: 'default'
+  devReleaseName: 'dev'
+  devReleaseNamespace: 'dev'
 
+  testImageRegistry: 'jmeisnertestaks.azurecr.io'
+  testDockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
+  testAksServiceConnection: '2145492d-dcc9-499a-b400-3c2b0bfb79e6'
   testValueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/atlanta-values.yaml'
   testReleaseName: 'test'
   testReleaseNamespace: 'test'
+
+  prodImageRegistry: 'jmeisnertestaks.azurecr.io'
+  prodDockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
+  prodAksServiceConnection: 'c608f1b5-7ad2-4acc-a32e-575a01b68f2d'
+  prodValueFilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/atlanta-values.yaml'
+  prodReleaseName: 'prod'
+  prodReleaseNamespace: 'prod'
 
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
@@ -67,7 +81,7 @@ stages:
         command: buildAndPush
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
+        containerRegistry: $(devDockerRegistryServiceConnection)
         buildContext: $(buildContextPath)
         tags: |
           $(tag)
@@ -93,9 +107,9 @@ stages:
       displayName: Deploy to Demo
       inputs:
         connectionType: Kubernetes Service Connection
-        kubernetesServiceEndpoint: $(aksServiceConnection)
+        kubernetesServiceEndpoint: $(devAksServiceConnection)
         command: upgrade
-        overrideValues: 'image.repository=$(imageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
+        overrideValues: 'image.repository=$(devImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
         chartType: FilePath
         chartPath: $(helmChartPath)
         valueFile: $(devValueFilePath)
@@ -121,7 +135,7 @@ stages:
         command: buildAndPush
         repository: $(imageRepository)
         dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
+        containerRegistry: $(testDockerRegistryServiceConnection)
         buildContext: $(buildContextPath)
         tags: |
           $(tag)
@@ -148,9 +162,9 @@ stages:
       displayName: Deploy to Demo
       inputs:
         connectionType: Kubernetes Service Connection
-        kubernetesServiceEndpoint: $(aksServiceConnection)
+        kubernetesServiceEndpoint: $(testAksServiceConnection)
         command: upgrade
-        overrideValues: 'image.repository=$(imageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
+        overrideValues: 'image.repository=$(testImageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
         chartType: FilePath
         chartPath: $(helmChartPath)
         valueFile: $(testValueFilePath)
@@ -170,10 +184,15 @@ stages:
     - checkout: self
       persistCredentials: true
     - task: Docker@2
-      displayName: Login to ACR
+      displayName: Login to Test ACR
       inputs:
         command: login
-        containerRegistry: $(dockerRegistryServiceConnection)
+        containerRegistry: $(testDockerRegistryServiceConnection)
+    - task: Docker@2
+      displayName: Login to Prod ACR
+      inputs:
+        command: login
+        containerRegistry: $(prodDockerRegistryServiceConnection)
     - task: PowerShell@2
       inputs:
         targetType: 'inline'
@@ -185,8 +204,8 @@ stages:
           $currentMinor = [Convert]::ToInt32($versionParts[1])
           $currentPatch = [Convert]::ToInt32($versionParts[2])
           $version = $currentMajor.ToString() + '.' + $currentMinor.ToString() + '.' + $currentPatch.ToString()
-          $dockerImage = $env:IMAGEREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version
-          $dockerImageRC = $dockerImage + "-rc"
+          $dockerImage = $env:PRODIMAGEREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version
+          $dockerImageRC = $env:TESTIMAGEREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version + "-rc"
           docker pull $dockerImageRC
           docker tag $dockerImageRC $dockerImage
           docker push $dockerImage
