@@ -2,6 +2,8 @@
 # Build and push an image to Azure Container Registry
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
+name: $(Build.BuildId)_$(Date:yyyyMMdd).$(Rev:r)
+
 trigger:
   branches:
     include:
@@ -41,7 +43,6 @@ variables:
   vmImageName: 'ubuntu-latest'
 
 
-name: $(Build.BuildId)_$(Date:yyyyMMdd).$(Rev:r)
 
 stages:
 - stage: GitOps
