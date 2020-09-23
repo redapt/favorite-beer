@@ -2,21 +2,20 @@
 # Build and push an image to Azure Container Registry
 # https://docs.microsoft.com/azure/devops/pipelines/languages/docker
 
+name: $(Build.BuildId)_$(Date:yyyyMMdd).$(Rev:r)
+
 trigger:
   branches:
     include:
     - master
-    - feature/*
-    - releases/*
-    exclude:
-    - releases/old*
+    - release
 
 pr:
   autoCancel: true
   branches:
     include:
-    - master
     - feature/*
+    - hotfix/*
 
 resources:
 - repo: self
@@ -40,10 +39,66 @@ variables:
   # Agent VM image name
   vmImageName: 'ubuntu-latest'
 
+
+
 stages:
-- stage: GitOps
-  condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'master'))
-  displayName: Git operations.
+- stage: Build
+  condition: and(eq(variables['Build.Reason'], 'PullRequest'), or(contains(variables['System.PullRequest.SourceBranch'], 'feature/'), contains(variables['System.PullRequest.SourceBranch'], 'hotfix/')), eq(variables['System.PullRequest.TargetBranch'], 'master'))
+  displayName: Build and Push to Dev ACR
+  jobs:  
+  - job: Build
+    displayName: Build
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - template: azure-pipelines/getVersion.yml
+    - task: Docker@2
+      displayName: Build and push an image to container registry
+      inputs:
+        command: buildAndPush
+        repository: $(imageRepository)
+        dockerfile: $(dockerfilePath)
+        containerRegistry: $(dockerRegistryServiceConnection)
+        buildContext: $(buildContextPath)
+        tags: |
+          $(tag)
+          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc
+          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+
+- stage: Deploy
+  condition: succeeded('Build')
+  displayName: Deploy to Dev Cluster
+  jobs:  
+  - job: Deploy
+    displayName: Deploy
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    - template: azure-pipelines/getVersion.yml
+
+    - task: HelmInstaller@1
+      displayName: Helm installer
+      inputs: 
+        helmVersionToInstall: 3.0.2
+
+    - task: HelmDeploy@0
+      displayName: Deploy to Demo
+      inputs:
+        connectionType: Kubernetes Service Connection
+        kubernetesServiceEndpoint: $(aksServiceConnection)
+        command: upgrade
+        overrideValues: 'image.repository=$(imageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)'
+        chartType: FilePath
+        chartPath: $(helmChartPath)
+        valueFile: $(valueFilePath)
+        releaseName: $(releaseName)
+        install: true
+        failOnStderr: false
+
+
+- stage: Update Release Build Version
+  condition: and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['Build.SourceBranchName'], 'release'))
+  displayName: Promote to Release
   jobs:
   - job: VersionUpdate
     pool:
@@ -72,56 +127,4 @@ stages:
           docker pull $dockerImageRC
           docker tag $dockerImageRC $dockerImage
           docker push $dockerImage
-    - template: azure-pipelines/bumpVersion.yml
-
-- stage: Build
-  condition: and(eq(variables['Build.Reason'], 'PullRequest'), contains(variables['System.PullRequest.SourceBranch'], 'feature'), eq(variables['System.PullRequest.TargetBranch'], 'master'))
-  displayName: Build and Push to Dev ACR
-  jobs:  
-  - job: Build
-    displayName: Build
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - template: azure-pipelines/getVersion.yml
-    - task: Docker@2
-      displayName: Build and push an image to container registry
-      inputs:
-        command: buildAndPush
-        repository: $(imageRepository)
-        dockerfile: $(dockerfilePath)
-        containerRegistry: $(dockerRegistryServiceConnection)
-        buildContext: $(buildContextPath)
-        tags: |
-          $(tag)
-          $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc
-
-- stage: Deploy
-  condition: succeeded('Build')
-  displayName: Deploy to Dev Cluster
-  jobs:  
-  - job: Deploy
-    displayName: Deploy
-    pool:
-      vmImage: $(vmImageName)
-    steps:
-    - template: azure-pipelines/getVersion.yml
-
-    - task: HelmInstaller@1
-      displayName: Helm installer
-      inputs: 
-        helmVersionToInstall: 3.0.2
-
-    - task: HelmDeploy@0
-      displayName: Deploy to Demo
-      inputs:
-        connectionType: Kubernetes Service Connection
-        kubernetesServiceEndpoint: $(aksServiceConnection)
-        command: upgrade
-        overrideValues: 'image.repository=$(imageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc'
-        chartType: FilePath
-        chartPath: $(helmChartPath)
-        valueFile: $(valueFilePath)
-        releaseName: $(releaseName)
-        install: true
-        failOnStderr: false
+    - template: azure-pipelines/bumpReleaseVersion.yml
