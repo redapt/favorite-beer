@@ -9,12 +9,13 @@ steps:
       git config --global user.email "system-azure-devops@redapt.com"
       git config --global user.name "System"
       $version = [IO.File]::ReadAllText("VERSION")
-      git tag $version
-      git push origin --tags
       $versionParts = $version.TrimEnd("*-").Split(".")
       $currentMajor = [Convert]::ToInt32($versionParts[0])
       $currentMinor = [Convert]::ToInt32($versionParts[1])
       $currentPatch = [Convert]::ToInt32($versionParts[2])
+      $version = $currentMajor.ToString() + '.' + $currentMinor.ToString() + '.' + $currentPatch.ToString()
+      git tag $version
+      git push origin --tags
       $currentPatch++
       Write-Output "##vso[task.setvariable variable=buildVersionMajor]$currentMajor"
       Write-Output "##vso[task.setvariable variable=buildVersionMinor]$currentMinor"
