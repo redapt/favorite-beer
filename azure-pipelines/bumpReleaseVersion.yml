@@ -4,7 +4,7 @@ steps:
     targetType: 'inline'
     workingDirectory: $(Build.SourcesDirectory)
     script: |
-      git checkout -b master
+      git checkout -b release
       git config --global user.email "system-azure-devops@redapt.com"
       git config --global user.name "System"
       $version = [IO.File]::ReadAllText("VERSION")
@@ -21,4 +21,4 @@ steps:
       git status
       git add VERSION
       git commit -m "[skip ci] Update version numbers for Build $version"
-      git push origin master
+      git push origin release
