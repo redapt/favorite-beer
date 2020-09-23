@@ -63,9 +63,16 @@ stages:
         workingDirectory: $(Build.SourcesDirectory)
         script: |
           $version = [IO.File]::ReadAllText("VERSION")
-          docker pull $env:containerRegistry/$env:imageRepository:$version-rc
-          docker tag $env:containerRegistry/$env:imageRepository:$version-rc $env:containerRegistry/$env:imageRepository:$version
-          docker push $env:containerRegistry/$env:imageRepository:$version
+          $versionParts = $version.TrimEnd("*-").Split(".")
+          $currentMajor = [Convert]::ToInt32($versionParts[0])
+          $currentMinor = [Convert]::ToInt32($versionParts[1])
+          $currentPatch = [Convert]::ToInt32($versionParts[2])
+          $version = $currentMajor.ToString() + '.' + $currentMinor.ToString() + '.' + $currentPatch.ToString()
+          $dockerImage = "$env:containerRegistry/$env:imageRepository:$version"
+          $dockerImageRC = "$env:containerRegistry/$env:imageRepository:$version-rc"
+          docker pull $dockerImageRC
+          docker tag $dockerImageRC $dockerImage
+          docker push dockerImage
     - template: azure-pipelines/bumpVersion.yml
 
 - stage: Build
