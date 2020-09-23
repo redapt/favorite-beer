@@ -243,7 +243,7 @@ stages:
         command: package
         chartPath: $(helmChartPath)
         destination: $(Build.ArtifactStagingDirectory)
-        arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc$(Build.BuildId)
+        arguments: --app-version $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)
 
     - task: HelmDeploy@0
       displayName: Deploy to Test
