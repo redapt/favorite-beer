@@ -25,7 +25,7 @@ variables:
   # Container registry service connection established during pipeline creation
   dockerRegistryServiceConnection: '168ae3a2-442f-4990-a32d-307bd419039d'
   imageRepository: 'favoritebeer'
-  containerRegistry: 'jmeisnertestaks.azurecr.io'
+  imageRegistry: 'jmeisnertestaks.azurecr.io'
   dockerfilePath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/Dockerfile'
   buildContextPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting'
   helmChartPath: '$(Build.SourcesDirectory)/spa-react-netcore-redis/voting/voting/k8s/Chart'
@@ -68,7 +68,7 @@ stages:
           $currentMinor = [Convert]::ToInt32($versionParts[1])
           $currentPatch = [Convert]::ToInt32($versionParts[2])
           $version = $currentMajor.ToString() + '.' + $currentMinor.ToString() + '.' + $currentPatch.ToString()
-          $dockerImage = $env:CONTAINERREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version
+          $dockerImage = $env:IMAGEREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version
           $dockerImageRC = $dockerImage
           docker pull $dockerImageRC
           docker tag $dockerImageRC $dockerImage
@@ -120,7 +120,7 @@ stages:
         connectionType: Kubernetes Service Connection
         kubernetesServiceEndpoint: $(aksServiceConnection)
         command: upgrade
-        overrideValues: 'image.repository=$(containerRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc'
+        overrideValues: 'image.repository=$(imageRegistry)/$(imageRepository),image.tag=$(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc'
         chartType: FilePath
         chartPath: $(helmChartPath)
         valueFile: $(valueFilePath)
