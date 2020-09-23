@@ -35,7 +35,6 @@ variables:
   buildVersionMajor: '0'
   buildVersionMinor: '0'
   buildVersionPatch: '0'
-  latestTag: '$(Build.SourceBranchName)-latest'
   releaseName: 'demo'
 
   # Agent VM image name
@@ -69,7 +68,7 @@ stages:
           $currentPatch = [Convert]::ToInt32($versionParts[2])
           $version = $currentMajor.ToString() + '.' + $currentMinor.ToString() + '.' + $currentPatch.ToString()
           $dockerImage = $env:IMAGEREGISTRY + "/" + $env:IMAGEREPOSITORY + ":" + $version
-          $dockerImageRC = $dockerImage
+          $dockerImageRC = $dockerImage + "-rc"
           docker pull $dockerImageRC
           docker tag $dockerImageRC $dockerImage
           docker push $dockerImage
@@ -95,7 +94,6 @@ stages:
         buildContext: $(buildContextPath)
         tags: |
           $(tag)
-          $(latestTag)
           $(buildVersionMajor).$(buildVersionMinor).$(buildVersionPatch)-rc
 
 - stage: Deploy
