@@ -42,7 +42,7 @@ redis:
     type: ClusterIP
     port: 6379
   image:
-    repository: gcr.io/redapt-anthos-poc/redis
+    repository: redaptcloud/redis
     tag: 3.2-alpine
     pullPolicy: IfNotPresent
 
