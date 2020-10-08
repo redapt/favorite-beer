@@ -1,0 +1,42 @@
+{{ if .Values.gke.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: favorite-beer-redis
+  labels:
+    app: {{ template "favorite-beer.name" . }}-redis
+    chart: {{ template "favorite-beer.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  serviceName: {{ template "favorite-beer.fullname" . }}-redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ template "favorite-beer.name" . }}-redis
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "favorite-beer.name" . }}-redis
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}-redis
+        image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+        imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.redis.port }}
+          name: redis
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+  volumeClaimTemplates:
+  - metadata:
+      name: redis-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+{{ end }}

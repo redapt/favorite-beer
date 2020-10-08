@@ -1,0 +1,12 @@
+kind: Kustomization
+resources:
+  - deployment.yaml
+  - service.yaml
+  - ingress.yaml
+configmapGenerator:
+- name: favorite-beer
+  files: 
+  - config/servicesettings.json
+  literals:
+    - REDIS_PORT=1234
+    - REDIS_HOST=localhost

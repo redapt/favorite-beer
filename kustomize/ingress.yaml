@@ -1,0 +1,13 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: favorite-beer
+spec:
+  rules:
+    - host: favorite-beer
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: favorite-beer
+              servicePort: http
