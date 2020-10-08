@@ -1,4 +1,6 @@
 apiVersion: extensions/v1beta1
+commonLabels:
+  app: favorite-beer
 kind: Ingress
 metadata:
   name: favorite-beer
