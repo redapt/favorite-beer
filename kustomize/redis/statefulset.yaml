@@ -1,15 +1,14 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: favorite-beer-redis
+  name: redis
 spec:
-  serviceName: favorite-beer-redis
-  replicas: 1
+  serviceName: redis
   template:
     metadata:
     spec:
       containers:
-      - name: favorite-beer-redis
+      - name: redis
         image: redis
         imagePullPolicy: IfNotPresent
         ports:
