@@ -5,7 +5,7 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-    - port: 80
-      targetPort: 80
-      protocol: TCP
-      name: redis
+  - name: redis
+    protocol: TCP
+    port: 80
+    targetPort: 80

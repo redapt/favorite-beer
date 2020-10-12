@@ -6,26 +6,25 @@ spec:
   template:
     spec:
       containers:
-        - name: app
-          ports:
-          - name: http
-            containerPort: 80
-            protocol: TCP
-          env:
-          - name: SERVICE_SETTINGS_PATH
-            value: /etc/config/servicesettings.json
-          - name: REDIS_HOST
-            valueFrom: 
-              configMapKeyRef:
-                name: favorite-beer
-                key: REDIS_HOST
-          - name: REDIS_PORT
-            valueFrom: 
-              configMapKeyRef:
-                name: favorite-beer
-                key: REDIS_PORT
+      - name: app
+        ports:
+        - name: http
+          protocol: TCP
+          containerPort: 80
+        env:
+        - name: SERVICE_SETTINGS_PATH
+          value: /etc/config/servicesettings.json
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: favorite-beer
+              key: REDIS_HOST
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: favorite-beer
+              key: REDIS_PORT
       volumes:
-        - name: config-volume
-          configMap:
-            name: favorite-beer
-
+      - name: config-volume
+        configMap:
+          name: favorite-beer

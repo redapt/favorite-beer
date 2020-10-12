@@ -3,4 +3,10 @@ kind: Kustomization
 resources:
 - service.yaml
 - statefulset.yaml
+commonLabels:
+  app.kubernetes.io/component: cache
+  app.kubernetes.io/instance: redis
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/name: redis
+  app.kubernetes.io/part-of: favorite-beer
 namePrefix: favorite-beer-

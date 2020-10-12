@@ -3,26 +3,26 @@ kind: StatefulSet
 metadata:
   name: redis
 spec:
-  serviceName: redis
   template:
     metadata:
     spec:
       containers:
       - name: redis
         image: redis
-        imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 80
-          name: redis
+        - name: redis
+          containerPort: 80
         volumeMounts:
         - name: redis-data
           mountPath: /data
+        imagePullPolicy: IfNotPresent
   volumeClaimTemplates:
   - metadata:
       name: redis-data
     spec:
-      storageClassName: manual
-      accessModes: [ "ReadWriteOnce" ]
       resources:
         requests:
           storage: 1Gi
+      accessModes: ["ReadWriteOnce"]
+      storageClassName: manual
+  serviceName: redis

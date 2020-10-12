@@ -1,15 +1,15 @@
 apiVersion: extensions/v1beta1
-commonLabels:
-  app: favorite-beer
 kind: Ingress
 metadata:
   name: favorite-beer
 spec:
   rules:
-    - host: favorite-beer
-      http:
-        paths:
-          - path: /
-            backend:
-              serviceName: favorite-beer
-              servicePort: http
+  - host: favorite-beer
+    http:
+      paths:
+      - backend:
+          serviceName: favorite-beer
+          servicePort: http
+        path: /
+commonLabels:
+  app: favorite-beer

@@ -1,14 +1,15 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - deployment.yaml
-  - service.yaml
-  - ingress.yaml
-  - redis
+- deployment.yaml
+- service.yaml
+- ingress.yaml
+commonLabels:
+  app: favorite-beer
 configmapGenerator:
 - name: favorite-beer
-  files: 
+  files:
   - config/servicesettings.json
   literals:
-    - REDIS_PORT=1234
-    - REDIS_HOST=localhost
+  - REDIS_PORT=1234
+  - REDIS_HOST=localhost
