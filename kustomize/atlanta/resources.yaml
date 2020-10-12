@@ -1,0 +1,3 @@
+- op: add
+  path: /spec/template/spec/containers/0/resources
+  value: {"limits":{"cpu":"100m","memory":"128Mi"},"requests":{"cpu":"100m","memory":"128Mi"}}

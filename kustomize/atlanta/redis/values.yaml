@@ -1,0 +1,6 @@
+redis:
+  port: 6379
+  service:
+    type: NodePort
+    port: 6379
+  storageClassName: "managed-premium"
