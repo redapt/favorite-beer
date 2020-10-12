@@ -1,0 +1,6 @@
+- op: replace
+  path: /spec/type
+  value: "NodePort"
+- op: replace
+  path: /spec/ports/0/port
+  value: 6379

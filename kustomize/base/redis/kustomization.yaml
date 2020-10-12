@@ -10,4 +10,3 @@ commonLabels:
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/name: redis
   app.kubernetes.io/part-of: favorite-beer
-namePrefix: favorite-beer-

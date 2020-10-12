@@ -1,4 +1,17 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+nameSuffix: favorite-beer-atlanta
 resources:
 - ../../base/redis/
+patchesJSON6902:
+ - target:
+     group: apps
+     version: v1
+     name: redis
+     kind: StatefulSet
+   path: storage_class.yaml
+ - target:
+     version: v1
+     name: redis
+     kind: Service
+   path: service.yaml
