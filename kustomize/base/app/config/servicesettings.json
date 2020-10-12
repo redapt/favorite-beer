@@ -1,0 +1,16 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "ServiceSettings": {
+    "Beers": [
+      "Great Divide",
+      "Epic",
+      "Resolute",
+      "Extra Beer"
+    ]
+  }
+}

@@ -5,7 +5,8 @@ resources:
 - statefulset.yaml
 commonLabels:
   app.kubernetes.io/component: cache
-  app.kubernetes.io/instance: redis
+  app.kubernetes.io/name: redis
+  app.kubernetes.io/instance: redis-favorite-beer
   app.kubernetes.io/managed-by: kustomize
   app.kubernetes.io/name: redis
   app.kubernetes.io/part-of: favorite-beer
