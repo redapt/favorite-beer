@@ -7,6 +7,7 @@ spec:
     spec:
       containers:
       - name: app
+        image: redaptcloud/favorite-beer:v2
         ports:
         - name: http
           protocol: TCP
