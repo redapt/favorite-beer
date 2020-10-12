@@ -1,4 +1,17 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+nameSuffix: -atlanta
+commonLabels:
+  region: atlanta
+  app.kubernetes.io/instance: favorite-beer-atlanta
 resources:
 - ../base/app/
+configmapGenerator:
+- name: favorite-beer
+  behavior: replace
+  files:
+  - ./config.json
+  literals:
+  - REDIS_PORT=1234
+  - REDIS_HOST=localhost
+
