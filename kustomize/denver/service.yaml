@@ -1,0 +1,6 @@
+- op: replace
+  path: /spec/type
+  value: LoadBalancer
+- op: replace
+  path: /spec/port
+  value: 80

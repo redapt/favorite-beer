@@ -1,0 +1,8 @@
+  port: 6379
+  service:
+    type: ClusterIP
+    port: 6379
+  image:
+    repository: redaptcloud/redis
+    tag: 3.2-alpine
+    pullPolicy: IfNotPresent

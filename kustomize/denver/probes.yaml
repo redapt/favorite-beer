@@ -1,0 +1,6 @@
+- op: add
+  path: /spec/template/spec/containers/0/livenessProbe
+  value: {"httpGet":{"path":"/","port":"http"}}
+- op: add
+  path: /spec/template/spec/containers/0/readinessProbe
+  value: {"httpGet":{"path":"/","port":"http"}}
