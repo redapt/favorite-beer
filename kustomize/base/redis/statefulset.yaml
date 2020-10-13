@@ -8,14 +8,20 @@ spec:
     spec:
       containers:
       - name: redis
+        args: ["/etc/redis.conf"]
         image: redis
         ports:
         - name: redis
-          containerPort: 80
+          containerPort: 6379
         volumeMounts:
         - name: redis-data
           mountPath: /data
-        imagePullPolicy: IfNotPresent
+        - name: redis-conf
+          mountPath: /etc/redis.conf
+      volumes:
+      - name: redis-conf
+        configMap:
+          name: redis
   volumeClaimTemplates:
   - metadata:
       name: redis-data
@@ -26,3 +32,4 @@ spec:
       accessModes: ["ReadWriteOnce"]
       storageClassName: manual
   serviceName: redis
+

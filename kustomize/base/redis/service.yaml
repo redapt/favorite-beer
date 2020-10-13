@@ -8,4 +8,4 @@ spec:
   - name: redis
     protocol: TCP
     port: 80
-    targetPort: 80
+    targetPort: redis
