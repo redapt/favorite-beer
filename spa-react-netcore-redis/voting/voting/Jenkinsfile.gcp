@@ -5,8 +5,8 @@ gcr_host = 'gcr.io'
 docker_image = 'favorite-beer'
 gcp_project = 'redapt-anthos-poc'
 release_name = 'gcp'
-gke_cluster_name = 'main-1'
-gke_cluster_region = 'us-west1'
+gke_cluster_name = 'jm-us-west2-dev'
+gke_cluster_region = 'us-west2'
 
 podTemplate(label: 'io-helm',
   containers: [
