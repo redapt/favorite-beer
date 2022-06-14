@@ -1,6 +1,6 @@
 ## This Dockerfile is used by App Engine Demo
 
-FROM mcr.microsoft.com/dotnet/aspnet:2.1 AS base
+FROM mcr.microsoft.com/dotnet/core/runtime:2.1 AS base
 WORKDIR /app
 EXPOSE 80
 
