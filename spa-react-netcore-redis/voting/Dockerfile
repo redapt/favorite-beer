@@ -1,10 +1,10 @@
 ## This Dockerfile is used by App Engine Demo
 
-FROM mcr.microsoft.com/dotnet:2.1-aspnetcore-runtime AS base
+FROM mcr.microsoft.com/dotnet/aspnet:2.1 AS base
 WORKDIR /app
 EXPOSE 80
 
-FROM mcr.microsoft.com/dotnet:2.1-sdk AS build
+FROM mcr.microsoft.com/dotnet/sdk:2.1 AS build
 # Install Node.js
 RUN apt-get install --yes curl 
 RUN curl --silent  --location https://deb.nodesource.com/setup_10.x |  bash -
