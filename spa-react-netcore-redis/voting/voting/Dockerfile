@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/dotnet/aspnet:2.1 AS base
 WORKDIR /app
-EXPOSE 80
+EXPOSE 8080
 
 FROM mcr.microsoft.com/dotnet/sdk:2.1 AS build
 # Install Node.js
@@ -21,5 +21,6 @@ FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
 
-EXPOSE 80
+ENV ASPNETCORE_URLS=http://+:8080
+EXPOSE 8080
 ENTRYPOINT ["dotnet", "voting.dll"]
