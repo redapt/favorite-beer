@@ -32,8 +32,6 @@ spec:
         stage('Make Image') {
             environment {
                 DOCKERFILE      = "Dockerfile"
-                GITREPO         = "github.com/redapt/favorite-beer.git"
-                GIT_REPO_BRANCH = "master"
                 CONTEXT         = "./spa-react-netcore-redis/voting"
                 REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                 IMAGE           = 'favorite-beer'
@@ -41,12 +39,10 @@ spec:
             }
             steps {
                 container('tools'){
-                    sh "git clone https://${env.GITREPO}"
                     sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
                     sh "tar xvf yq_linux_amd64.tar.gz"
                     sh "mv yq_linux_amd64 /usr/bin/yq"
                     dir("favorite-beer") {
-                        sh "git checkout ${env.GIT_REPO_BRANCH}"
                         sh "git rev-parse --short=10 HEAD > SHA_TAG"
                         sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
                         sh "./jenkins/scripts/bump_release_version.sh"
