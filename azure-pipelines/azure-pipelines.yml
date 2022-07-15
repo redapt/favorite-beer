@@ -4,19 +4,21 @@
 
 name: $(Build.BuildId)_$(Date:yyyyMMdd).$(Rev:r)
 
-trigger:
-  branches:
-    include:
-    - master
-    - release
-  paths:
-    exclude:
-    - VERSION
-pr:
-  autoCancel: true
-  branches:
-    include:
-    - release
+trigger: none
+
+# trigger:
+#   branches:
+#     include:
+#     - master
+#     - release
+#   paths:
+#     exclude:
+#     - VERSION
+# pr:
+#   autoCancel: true
+#   branches:
+#     include:
+#     - release
 
 resources:
 - repo: self

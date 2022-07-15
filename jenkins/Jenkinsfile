@@ -1,0 +1,69 @@
+pipeline {
+    agent {
+        kubernetes {
+            label 'kaniko'
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kaniko
+spec:
+  serviceAccountName: jenkins-sa-agent
+  containers:
+  - name: jnlp
+    image: 'docker.io/jenkins/inbound-agent:4.3-4-alpine'
+    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
+  - name: kaniko
+    image: 771502366784.dkr.ecr.us-east-2.amazonaws.com/kaniko:latest
+    imagePullPolicy: Always
+    command:
+    - /busybox/cat
+    tty: true
+  - name: tools
+    image: argoproj/argo-cd-ci-builder:v1.0.0
+    command:
+    - cat
+    tty: true
+  restartPolicy: Never
+"""
+        }
+    }
+    stages {
+        stage('Make Image') {
+            environment {
+                DOCKERFILE      = "Dockerfile"
+                CONTEXT         = "./spa-react-netcore-redis/voting"
+                REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
+                IMAGE           = 'favorite-beer'
+                LATEST_TAG      = 'latest'
+            }
+            steps {
+                container('tools'){
+                    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
+                    sh "tar xvf yq_linux_amd64.tar.gz"
+                    sh "mv yq_linux_amd64 /usr/bin/yq"
+
+                    sh "git rev-parse HEAD > SHA_TAG"
+                    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
+                    sh "./jenkins/scripts/bump_release_version.sh"
+                    
+                }
+                container(name: 'kaniko', shell: '/busybox/sh') {   
+                    sh '''#!/busybox/sh
+                    TAG=$(cat SHA_TAG)
+                    VERSION="$(cat VERSION)-rc"
+                    VERSION_ALT="$(cat VERSION)-rc${BUILD_NUMBER}"
+
+                    /kaniko/executor \
+                    --context=dir://${CONTEXT} \
+                    --dockerfile=${DOCKERFILE} \
+                    --destination=${REGISTRY}/${IMAGE}:${TAG} \
+                    --destination=${REGISTRY}/${IMAGE}:${VERSION} \
+                    --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
+                    --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
+                    '''
+                }
+            }
+        }
+    }
+}

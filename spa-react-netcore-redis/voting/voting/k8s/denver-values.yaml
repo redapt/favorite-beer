@@ -9,11 +9,6 @@ image:
   tag: v1
   pullPolicy: IfNotPresent
 
-ports: 
-- name: http
-  containerPort: 80
-  protocol: TCP
-
 servicesettings: |-
   {
     "ServiceSettings": {

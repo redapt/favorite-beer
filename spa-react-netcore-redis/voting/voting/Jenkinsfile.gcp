@@ -4,7 +4,9 @@ svc_name = 'favorite-beer'
 gcr_host = 'gcr.io'
 docker_image = 'favorite-beer'
 gcp_project = 'redapt-anthos-poc'
-release_name = "gcp"
+release_name = 'gcp'
+gke_cluster_name = 'jm-us-west2-dev'
+gke_cluster_region = 'us-west2'
 
 podTemplate(label: 'io-helm',
   containers: [
@@ -38,7 +40,7 @@ podTemplate(label: 'io-helm',
           dir("spa-react-netcore-redis/voting") {
           
             sh("gcloud auth activate-service-account --key-file=${GC_KEY}")
-            sh("gcloud builds submit --config jenkins-cloudbuild.yaml --gcs-log-dir gs://redapt-anthos-poc_cloudbuild-logs/logs --substitutions=TAG_NAME='${gcr_host}/${gcp_project}/${docker_image}:${lastCommitLong}' .")
+            sh("gcloud builds submit --config jenkins-cloudbuild.yaml --gcs-log-dir gs://${gcp_project}_cloudbuild-logs/logs --substitutions=TAG_NAME='${gcr_host}/${gcp_project}/${docker_image}:${lastCommitLong}' .")
 
             sh("gcloud auth activate-service-account --key-file=${GC_KEY}")
 
@@ -53,7 +55,7 @@ podTemplate(label: 'io-helm',
           dir("spa-react-netcore-redis/voting/voting") {
 
             sh("gcloud auth activate-service-account --key-file=${GC_KEY}")
-            sh("gcloud beta container clusters get-credentials main-1 --region us-west1 --project redapt-anthos-poc")
+            sh("gcloud beta container clusters get-credentials ${gke_cluster_name} --region ${gke_cluster_region} --project ${gcp_project}")
 
             helmDeploy(dry_run: false, name: "${release_name}", chart_dir: "k8s/Chart", values: "k8s/gcr-values.yaml", repository: "${gcr_host}/${gcp_project}/${docker_image}", tag: "${lastCommitLong}", namespace: 'default')
           }
