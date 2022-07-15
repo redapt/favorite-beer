@@ -33,7 +33,6 @@ spec:
             when {
                 anyOf {
                     allOf { 
-                        changeRequest target: 'release'
                         branch pattern: "(feature|hotfix)/.*", comparator: 'REGEXP'
                     }
                     allOf { 
