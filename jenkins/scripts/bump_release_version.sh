@@ -1,7 +1,7 @@
-export currentBranch=$(git branch | sed -n '/\* /s///p')
+currentBranch=$(git branch | sed -n '/\* /s///p')
 git fetch origin release
 git checkout release
-export VERSION=$(cat VERSION)
+VERSION=$(cat VERSION)
 VERSION="${VERSION#[vV]}"
 VERSION_MAJOR="${VERSION%%\.*}"
 VERSION_MINOR="${VERSION#*.}"
