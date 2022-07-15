@@ -42,29 +42,26 @@ spec:
                     sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
                     sh "tar xvf yq_linux_amd64.tar.gz"
                     sh "mv yq_linux_amd64 /usr/bin/yq"
-                    dir("favorite-beer") {
-                        sh "git rev-parse --short=10 HEAD > SHA_TAG"
-                        sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
-                        sh "./jenkins/scripts/bump_release_version.sh"
-                    }
+
+                    sh "git rev-parse --short=10 HEAD > SHA_TAG"
+                    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
+                    sh "./jenkins/scripts/bump_release_version.sh"
+                    
                 }
-                container(name: 'kaniko', shell: '/busybox/sh') {
+                container(name: 'kaniko', shell: '/busybox/sh') {   
+                    sh '''#!/busybox/sh
+                    TAG=$(cat SHA_TAG)
+                    VERSION="$(cat VERSION)-rc"
+                    VERSION_ALT="$(cat VERSION)-rc${BUILD_NUMBER}"
 
-                    dir("favorite-beer") {
-                        sh '''#!/busybox/sh
-                        TAG=$(cat SHA_TAG)
-                        VERSION="$(cat VERSION)-rc"
-                        VERSION_ALT="$(cat VERSION)-rc${BUILD_NUMBER}"
-
-                        /kaniko/executor \
-                        --context=dir://${CONTEXT} \
-                        --dockerfile=${DOCKERFILE} \
-                        --destination=${REGISTRY}/${IMAGE}:${TAG} \
-                        --destination=${REGISTRY}/${IMAGE}:${VERSION} \
-                        --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
-                        --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
-                        '''
-                    }
+                    /kaniko/executor \
+                    --context=dir://${CONTEXT} \
+                    --dockerfile=${DOCKERFILE} \
+                    --destination=${REGISTRY}/${IMAGE}:${TAG} \
+                    --destination=${REGISTRY}/${IMAGE}:${VERSION} \
+                    --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
+                    --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
+                    '''
                 }
             }
         }
