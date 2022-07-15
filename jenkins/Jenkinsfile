@@ -34,9 +34,7 @@ spec:
                 anyOf {
                     allOf { 
                         changeRequest target: 'release'
-                        anyOf {
-                           branch pattern: "(feature|hotfix)/.*", comparator: 'REGEXP'
-                        }
+                        branch pattern: "(feature|hotfix)/.*", comparator: 'REGEXP'
                     }
                     allOf { 
                         not {
