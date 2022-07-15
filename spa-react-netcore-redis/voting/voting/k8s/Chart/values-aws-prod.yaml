@@ -1,3 +1,3 @@
 image:
   repository: 771502366784.dkr.ecr.us-east-2.amazonaws.com/favorite-beer
-  tag: 1.0.14-rc1
+  tag: '1.0.7'
