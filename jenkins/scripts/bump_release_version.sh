@@ -1,4 +1,4 @@
-currentBranch=$(git branch | sed -n '/\* /s///p')
+currentBranch=$GIT_BRANCH
 git fetch origin release
 git checkout release
 VERSION=$(cat VERSION)
