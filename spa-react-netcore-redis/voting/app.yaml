@@ -1,0 +1,20 @@
+service: default
+
+runtime: custom
+env: flex
+
+manual_scaling:
+  instances: 1
+
+env_variables:
+  REDIS_HOST: "10.245.151.51"
+  REDIS_PORT: "6379"
+
+# network:
+#   name: default
+#   subnetwork_name: default
+
+# gcloud redis instances create default --size=1 --region=us-west2 --redis-version=redis_5_0
+# gcloud redis instances describe default --region=us-west2
+# gcloud config set project redapt-anthos-poc
+# gcloud app deploy -v 0

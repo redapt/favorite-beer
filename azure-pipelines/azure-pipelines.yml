@@ -4,21 +4,22 @@
 
 name: $(Build.BuildId)_$(Date:yyyyMMdd).$(Rev:r)
 
-trigger:
-  branches:
-    include:
-    - master
-    - release
-  paths:
-    exclude:
-    - VERSION
-pr:
-  autoCancel: true
-  branches:
-    include:
-    - release
-# Master branch is needed for PRs directly from Hotfix, still WIP.
-#    - master
+trigger: none
+
+# trigger:
+#   branches:
+#     include:
+#     - master
+#     - release
+#   paths:
+#     exclude:
+#     - VERSION
+# pr:
+#   autoCancel: true
+#   branches:
+#     include:
+#     - release
+
 
 resources:
 - repo: self

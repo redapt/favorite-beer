@@ -1,3 +1,5 @@
+## This Dockerfile is used by App Engine Demo
+
 FROM mcr.microsoft.com/dotnet/aspnet:2.1 AS base
 WORKDIR /app
 EXPOSE 8080
@@ -10,7 +12,7 @@ RUN apt-get install --yes nodejs build-essential
 WORKDIR /src
 COPY voting/voting.csproj voting/
 RUN dotnet restore voting/voting.csproj
-COPY . .
+COPY voting voting/
 WORKDIR /src/voting
 RUN dotnet build voting.csproj -c Release -o /app
 
