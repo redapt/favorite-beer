@@ -6,7 +6,8 @@ steps:
     workingDirectory: $(Build.SourcesDirectory)
     script: |
       $currentBranch = &git branch --show-current
-      git checkout -b release
+      git fetch origin release
+      git checkout release
       git config --global user.email "system-azure-devops@redapt.com"
       git config --global user.name "System"
       $version = [IO.File]::ReadAllText("VERSION")
