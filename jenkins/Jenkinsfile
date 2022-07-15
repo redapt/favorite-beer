@@ -57,13 +57,15 @@ spec:
                     dir("favorite-beer") {
                         sh '''#!/busybox/sh
                         TAG=$(cat SHA_TAG)
-                        VERSION=$(cat VERSION)
+                        VERSION="$(cat VERSION)-rc"
+                        VERSION_ALT="$(cat VERSION)-rc${BUILD_NUMBER}"
 
                         /kaniko/executor \
                         --context=dir://${CONTEXT} \
                         --dockerfile=${DOCKERFILE} \
                         --destination=${REGISTRY}/${IMAGE}:${TAG} \
                         --destination=${REGISTRY}/${IMAGE}:${VERSION} \
+                        --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
                         --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
                         '''
                     }
