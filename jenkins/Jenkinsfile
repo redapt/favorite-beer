@@ -32,10 +32,7 @@ spec:
         stage('Make Image') {
             when {
                 anyOf {
-                    allOf { 
-                        changeRequest()
-                        branch pattern: "(feature|hotfix)/.*", comparator: 'REGEXP'
-                    }
+                    changeRequest()
                     allOf { 
                         not {
                             changeRequest()
