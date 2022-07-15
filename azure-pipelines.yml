@@ -4,6 +4,8 @@
 
 name: $(Build.BuildId)_$(Date:yyyyMMdd).$(Rev:r)
 
+trigger: none
+
 # trigger:
 #   branches:
 #     include:
