@@ -1,0 +1,6 @@
+image:
+  repository: 771502366784.dkr.ecr.us-east-2.amazonaws.com/favorite-beer
+  tag: latest
+
+service:
+  type: LoadBalancer
