@@ -31,8 +31,19 @@ spec:
     stages {
         stage('Make Image') {
             when {
-                expression {
-                    (env.CHANGE_ID != "" && (env.BRANCH_NAME.contains("feature/") || env.BRANCH_NAME.contains("hotfix/"))) || (env.CHANGE_ID == "" && env.BRANCH_NAME.contains("release"))
+                anyOf {
+                    allOf { 
+                        changeRequest target: 'release'
+                        expression { 
+                            (env.BRANCH_NAME.contains("feature/") || env.BRANCH_NAME.contains("hotfix/"))
+                        }
+                    }
+                    allOf { 
+                        not {
+                            changeRequest()
+                        }
+                        branch 'release'
+                    }
                 }
             }
             environment {
@@ -49,10 +60,6 @@ spec:
                 //    sh "mv yq_linux_amd64 /usr/bin/yq"
                 //
                     sh "git rev-parse HEAD > SHA_TAG"
-                    sh "echo BRANCH_NAME"
-                    sh "echo ${BRANCH_NAME}"
-                    sh "echo CHANGE_ID"
-                    sh "echo ${CHANGE_ID}"
                 //    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
                 //    sh "./jenkins/scripts/bump_release_version.sh"
                 //    
