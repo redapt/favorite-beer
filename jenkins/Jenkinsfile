@@ -49,6 +49,10 @@ spec:
                 //    sh "mv yq_linux_amd64 /usr/bin/yq"
                 //
                     sh "git rev-parse HEAD > SHA_TAG"
+                    sh "echo BRANCH_NAME"
+                    sh "echo ${BRANCH_NAME}"
+                    sh "echo CHANGE_ID"
+                    sh "echo ${CHANGE_ID}"
                 //    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
                 //    sh "./jenkins/scripts/bump_release_version.sh"
                 //    
