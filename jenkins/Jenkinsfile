@@ -34,8 +34,8 @@ spec:
                 anyOf {
                     allOf { 
                         changeRequest target: 'release'
-                        expression { 
-                            (env.BRANCH_NAME.contains("feature/") || env.BRANCH_NAME.contains("hotfix/"))
+                        anyOf {
+                           branch pattern: "(feature|hotfix)/.*", comparator: 'REGEXP'
                         }
                     }
                     allOf { 
