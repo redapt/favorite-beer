@@ -48,7 +48,7 @@ spec:
                     dir("favorite-beer") {
                         sh "git checkout ${env.GIT_REPO_BRANCH}"
                         sh "git rev-parse --short=10 HEAD > SHA_TAG"
-                        sh "chmod +x ./jenkins/scripts/bump_version.sh"
+                        sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
                         sh "./jenkins/scripts/bump_release_version.sh"
                     }
                 }
