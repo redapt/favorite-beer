@@ -96,12 +96,12 @@ spec:
                                 changeRequest target: 'master'
                                 changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
                             }
-                            allOf { 
-                                not {
-                                    changeRequest()
-                                }
-                                branch 'release'
-                            }
+                            //allOf { 
+                            //    not {
+                            //        changeRequest()
+                            //    }
+                            //    branch 'release'
+                            //}
                             allOf { 
                                 not {
                                     changeRequest()
@@ -201,7 +201,7 @@ spec:
                         }
                     }
                     steps {
-                        container('tools'){               
+                        container('jnlp'){               
                             echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_CANDIDATE} [skip ci]"
                             sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
                             sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
