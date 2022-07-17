@@ -179,7 +179,7 @@ spec:
                     }
                 }
 
-                stage('Tag Commit') {
+                stage('VERSION Commit') {
                     when {
                         anyOf {
                             allOf { 
