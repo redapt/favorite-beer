@@ -61,9 +61,10 @@ spec:
                 REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
-                SHA_TAG         = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                TAG             = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                 VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
+                VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
             }
             steps {
                 //container('tools'){
@@ -74,14 +75,11 @@ spec:
                 //    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
                 //    sh "./jenkins/scripts/bump_release_version.sh"
                 //    
-                }
+                //}
                 container(name: 'kaniko', shell: '/busybox/sh') {   
                     script {
                         try {
                             sh '''#!/busybox/sh
-                            TAG=$(cat SHA_TAG)
-                            VERSION_ALT="${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
-
                             /kaniko/executor \
                             --context=dir://${CONTEXT} \
                             --dockerfile=${DOCKERFILE} \
