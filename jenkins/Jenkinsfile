@@ -146,7 +146,8 @@ spec:
                         REGISTRY        = "${params.REGISTRY}"
                         IMAGE           = "${params.IMAGE}"
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
+                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
                         VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
@@ -175,7 +176,8 @@ spec:
                         REGISTRY        = "${params.REGISTRY}"
                         IMAGE           = "${params.IMAGE}"
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
                         VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
@@ -210,8 +212,8 @@ spec:
                         REGISTRY        = "${params.REGISTRY}"
                         IMAGE           = "${params.IMAGE}"
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
                         VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
                         VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
@@ -238,7 +240,8 @@ spec:
                         REGISTRY        = "${params.REGISTRY}"
                         IMAGE           = "${params.IMAGE}"
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
                         VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
