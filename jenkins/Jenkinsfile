@@ -284,24 +284,5 @@ spec:
             }
         }
 
-        stage('Skip CI'){
-            when {
-                allOf{
-                    not {
-                        expression {
-                            isMergeCommit(env.GIT_COMMIT)
-                        }
-                    }
-                    changelog '\\[skip ci\\]'
-                }
-            }
-            steps {
-                script {
-                    currentBuild.result = 'ABORTED'
-                    return
-                }
-            }
-        }
-
     }
 }
