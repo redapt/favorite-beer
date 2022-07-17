@@ -50,8 +50,13 @@ spec:
 
         stage('CICD') {
             when {
-                not {
-                    changelog '\\[skip ci\\]'
+                anyOf {
+                    expression {
+                        isMergeCommit(env.GIT_COMMIT)
+                    }
+                    not {
+                        changelog '\\[skip ci\\]'
+                    }
                 }
             }
             stages {
@@ -261,7 +266,14 @@ spec:
 
         stage('Skip CI'){
             when {
-                changelog '\\[skip ci\\]'
+                allOf{
+                    not {
+                        expression {
+                            isMergeCommit(env.GIT_COMMIT)
+                        }
+                    }
+                    changelog '\\[skip ci\\]'
+                }
             }
             steps {
                 script {
