@@ -17,6 +17,15 @@ def buildSuffix(String branch) {
 }
 
 pipeline {
+
+    parameters {
+        string(name: 'REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com')
+
+        string(name: 'IMAGE', defaultValue: 'favorite-beer', description: 'What should the built/deployed image be called? ex: favorite-beer')
+
+        string(name: 'LATEST_TAG', defaultValue: 'latest', description: 'Do you want to override the latest tag? default: latest')
+    }
+
     agent {
         kubernetes {
             label 'kaniko'
@@ -84,9 +93,6 @@ spec:
                     environment {
                         DOCKERFILE      = "Dockerfile"
                         CONTEXT         = "./spa-react-netcore-redis/voting"
-                        REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                        IMAGE           = 'favorite-beer'
-                        LATEST_TAG      = 'latest'
                         TAG             = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
@@ -109,10 +115,10 @@ spec:
                                     /kaniko/executor \
                                     --context=dir://${CONTEXT} \
                                     --dockerfile=${DOCKERFILE} \
-                                    --destination=${REGISTRY}/${IMAGE}:${TAG} \
-                                    --destination=${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX} \
-                                    --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
-                                    --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
+                                    --destination=${params.REGISTRY}/${params.IMAGE}:${TAG} \
+                                    --destination=${params.REGISTRY}/${params.IMAGE}:${VERSION}-${VERSION_SUFFIX} \
+                                    --destination=${params.REGISTRY}/${params.IMAGE}:${VERSION_ALT} \
+                                    --destination=${params.REGISTRY}/${params.IMAGE}:${params.LATEST_TAG}
                                     '''
                                     buildCompleted = true
                                 } catch (Exception e) {
@@ -133,14 +139,12 @@ spec:
                         }
                     }
                     environment {
-                        REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                        IMAGE           = 'favorite-beer'
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
                     }
                     steps {
                         container('tools'){               
-                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Dev Environment"
+                            echo "Deploy ${params.REGISTRY}/${params.IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Dev Environment"
                         }
                     }
                 }
@@ -157,14 +161,12 @@ spec:
                         }
                     }
                     environment {
-                        REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                        IMAGE           = 'favorite-beer'
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
                     }
                     steps {
                         container('tools'){               
-                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Test Environment"
+                            echo "Deploy ${params.REGISTRY}/${params.IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Test Environment"
                         }
                     }
                 }
@@ -172,21 +174,39 @@ spec:
                 stage('Tag Release Candidate') {
                     when {
                         allOf { 
-                            changeRequest target: 'master'
-                            anyOf {
-                               changeRequest branch: 'release', comparator: 'REGEXP'
+                            not {
+                                changeRequest()
                             }
+                            branch 'release'
                         }
                     }
                     environment {
-                        REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                        IMAGE           = 'favorite-beer'
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
                     }
                     steps {
                         container('tools'){               
                             echo "Tag Release Candidate Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
+                        }
+                    }
+                }  
+
+                stage('Tag Hotfix') {
+                    when {
+                        allOf { 
+                            changeRequest target: 'master'
+                            anyOf {
+                               changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
+                            }
+                        }
+                    }
+                    environment {
+                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                    }
+                    steps {
+                        container('tools'){               
+                            echo "Tag Hotfix Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                         }
                     }
                 }  
@@ -204,40 +224,15 @@ spec:
                         }
                     }
                     environment {
-                        REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                        IMAGE           = 'favorite-beer'
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
                     }
                     steps {
-                        container('tools'){    
-                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION} to Production Registry"           
-                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Stage Environment"
+                        container('tools'){             
+                            echo "Deploy ${params.REGISTRY}/${params.IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Stage Environment"
                         }
                     }
                 }
-
-                stage('Tag Hotfix') {
-                    when {
-                        allOf { 
-                            changeRequest target: 'master'
-                            anyOf {
-                               changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
-                            }
-                        }
-                    }
-                    environment {
-                        REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                        IMAGE           = 'favorite-beer'
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
-                    }
-                    steps {
-                        container('tools'){               
-                            echo "Tag Hotfix Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
-                        }
-                    }
-                }  
 
                 stage('Deploy: Prod') {
                     when {
@@ -249,13 +244,12 @@ spec:
                         }
                     }
                     environment {
-                        REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                        IMAGE           = 'favorite-beer'
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                     }
                     steps {
-                        container('tools'){               
-                            echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
+                        container('tools'){      
+                            echo "Promote ${params.REGISTRY}/${params.IMAGE}:${VERSION} to Production Registry"           
+                            echo "Deploy ${params.IMAGE}:${VERSION} to Prod Environment"
                             echo "Down-Merge Master into Release, bump Release version no suffix [skip ci]"
 
                         }
