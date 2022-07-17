@@ -213,7 +213,7 @@ spec:
                                 sh "echo ${VERSION_CANDIDATE} > VERSION"
                                 sh "git add VERSION"
                                 sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
-                                sh "git remote add origin https://${PAT}@github.com/redapt/favorite-beer.git"
+                                sh "git remote set-url origin https://${PAT}@github.com/redapt/favorite-beer.git"
                                 sh "git push origin ${VERSION_BRANCH}"
                             }
 
