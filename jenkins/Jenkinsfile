@@ -61,6 +61,7 @@ spec:
                 REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
+                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
             }
             steps {
                 container('tools'){
@@ -78,8 +79,7 @@ spec:
                         try {
                             sh '''#!/busybox/sh
                             TAG=$(cat SHA_TAG)
-                            VERSION="$(cat VERSION)-rc"
-                            VERSION_ALT="$(cat VERSION)-rc${BUILD_NUMBER}"
+                            VERSION_ALT="${VERSION}-rc${BUILD_NUMBER}"
 
                             /kaniko/executor \
                             --context=dir://${CONTEXT} \
@@ -111,10 +111,11 @@ spec:
                 REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
+                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
             }
             steps {
                 container('tools'){               
-                    echo "Deploy ${REGISTRY}/${IMAGE}:\$(cat VERSION)-rc${BUILD_NUMBER} to Dev Environment"
+                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-rc${BUILD_NUMBER} to Dev Environment"
                 }
             }
         }
@@ -140,10 +141,11 @@ spec:
                 REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
+                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
             }
             steps {
                 container('tools'){               
-                    echo "Deploy ${REGISTRY}/${IMAGE}:\$(cat VERSION)-rc${BUILD_NUMBER} to Test Environment"
+                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-rc${BUILD_NUMBER} to Test Environment"
                 }
             }
         }
@@ -161,10 +163,11 @@ spec:
                 REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
+                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
             }
             steps {
                 container('tools'){               
-                    echo "Tag Release Candidate Version: \$(cat VERSION)-rc${BUILD_NUMBER}"
+                    echo "Tag Release Candidate Version: ${VERSION}-rc${BUILD_NUMBER}"
                 }
             }
         }  
@@ -182,10 +185,11 @@ spec:
                 REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
+                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
             }
             steps {
                 container('tools'){               
-                    echo "Tag Hotfix Version: \$(cat VERSION)-hotfix${BUILD_NUMBER}"
+                    echo "Tag Hotfix Version: ${VERSION}-hotfix${BUILD_NUMBER}"
                 }
             }
         }  
@@ -203,11 +207,12 @@ spec:
                 REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
+                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
             }
             steps {
                 container('tools'){               
-                    echo "Promote ${REGISTRY}/${IMAGE}:\$(cat VERSION) to Prod Registry"
-                    echo "Deploy ${IMAGE}:\$(cat VERSION) to Prod Environment"
+                    echo "Promote ${REGISTRY}/${IMAGE}:${VERSION} to Prod Registry"
+                    echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
                     echo "Down-Merge Master into Release, bump Release version no suffix [skip ci]"
 
                 }
