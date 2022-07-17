@@ -68,6 +68,18 @@ spec:
                     }
                 }
             }
+            environment {
+                DOCKERFILE      = "Dockerfile"
+                CONTEXT         = "./spa-react-netcore-redis/voting"
+                TAG             = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                REGISTRY        = "${params.REGISTRY}"
+                IMAGE           = "${params.IMAGE}"
+                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                LATEST_TAG      = "${params.LATEST_TAG}"
+                VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
+                VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
+                VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
+            }
             stages {
                 stage('Build Image') {
                     when {
@@ -89,18 +101,6 @@ spec:
                                 branch 'develop'
                             }
                         }
-                    }
-                    environment {
-                        DOCKERFILE      = "Dockerfile"
-                        CONTEXT         = "./spa-react-netcore-redis/voting"
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        LATEST_TAG      = "${params.LATEST_TAG}"
-                        TAG             = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
-                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
                         //container('tools'){
@@ -142,14 +142,6 @@ spec:
                             branch 'develop'
                         }
                     }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
-                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
-                    }
                     steps {
                         container('tools'){           
                             script {     
@@ -171,14 +163,6 @@ spec:
                                 branch 'release'
                             }
                         }
-                    }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
-                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
                         container('tools'){               
@@ -208,14 +192,6 @@ spec:
                             }
                         }
                     }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
-                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
-                    }
                     steps {
                         container('tools'){               
                             echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_ALT} [skip ci]"
@@ -235,14 +211,6 @@ spec:
                                 }
                             }
                         }
-                    }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
-                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
                         container('tools'){             
@@ -265,11 +233,6 @@ spec:
                             }
                             branch 'master'
                         }
-                    }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                     }
                     steps {
                         container('tools'){      
