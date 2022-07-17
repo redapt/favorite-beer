@@ -10,7 +10,10 @@ def buildSuffix(String branch) {
   if(branch == "develop"){
     return "dev"
   }
-  return "-rc"
+  if(branch == "release"){
+    return "rc"
+  }
+  return "hotfix"
 }
 
 pipeline {
@@ -146,12 +149,6 @@ spec:
                                 }
                                 branch 'release'
                             }
-                            allOf { 
-                                changeRequest target: 'master'
-                                anyOf {
-                                   changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
-                                }
-                            }
                         }
                     }
                     environment {
@@ -188,6 +185,32 @@ spec:
                         }
                     }
                 }  
+
+                stage('Deploy: Stage') {
+                    when {
+                        anyOf {
+                            allOf { 
+                                changeRequest target: 'master'
+                                anyOf {
+                                   changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
+                                   changeRequest branch: 'release', comparator: 'REGEXP'
+                                }
+                            }
+                        }
+                    }
+                    environment {
+                        REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
+                        IMAGE           = 'favorite-beer'
+                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix(sh(script: 'if [[ -z "${CHANGE_BRANCH}" ]]; then echo -n ${BRANCH_NAME}; else echo -n ${CHANGE_BRANCH}; fi;', returnStdout: true).trim())
+                    }
+                    steps {
+                        container('tools'){    
+                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION} to Production Registry"           
+                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Stage Environment"
+                        }
+                    }
+                }
 
                 stage('Tag Hotfix') {
                     when {
@@ -227,7 +250,6 @@ spec:
                     }
                     steps {
                         container('tools'){               
-                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION} to Prod Registry"
                             echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
                             echo "Down-Merge Master into Release, bump Release version no suffix [skip ci]"
 
