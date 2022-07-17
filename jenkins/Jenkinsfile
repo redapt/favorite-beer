@@ -19,7 +19,7 @@ def buildSuffix(String branch) {
 pipeline {
 
     parameters {
-        string(name: 'REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com')
+        string(name: 'REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com [Note: jenkins-kaniko should be within this registry at kaniko:latest]')
 
         string(name: 'IMAGE', defaultValue: 'favorite-beer', description: 'What should the built/deployed image be called? ex: favorite-beer')
 
@@ -41,7 +41,7 @@ spec:
     image: 'docker.io/jenkins/inbound-agent:4.3-4-alpine'
     args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
   - name: kaniko
-    image: 771502366784.dkr.ecr.us-east-2.amazonaws.com/kaniko:latest
+    image: ${params.REGISTRY}/kaniko:latest
     imagePullPolicy: Always
     command:
     - /busybox/cat
