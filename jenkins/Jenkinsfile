@@ -74,24 +74,25 @@ spec:
                 //    
                 }
                 container(name: 'kaniko', shell: '/busybox/sh') {   
+                    script {
+                        try {
+                            sh '''#!/busybox/sh
+                            TAG=$(cat SHA_TAG)
+                            VERSION="$(cat VERSION)-rc"
+                            VERSION_ALT="$(cat VERSION)-rc${BUILD_NUMBER}"
 
-                    try{
-                        sh '''#!/busybox/sh
-                        TAG=$(cat SHA_TAG)
-                        VERSION="$(cat VERSION)-rc"
-                        VERSION_ALT="$(cat VERSION)-rc${BUILD_NUMBER}"
-
-                        /kaniko/executor \
-                        --context=dir://${CONTEXT} \
-                        --dockerfile=${DOCKERFILE} \
-                        --destination=${REGISTRY}/${IMAGE}:${TAG} \
-                        --destination=${REGISTRY}/${IMAGE}:${VERSION} \
-                        --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
-                        --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
-                        '''
-                        buildCompleted = true
-                    }catch (Exception e){
-                        buildCompleted = false
+                            /kaniko/executor \
+                            --context=dir://${CONTEXT} \
+                            --dockerfile=${DOCKERFILE} \
+                            --destination=${REGISTRY}/${IMAGE}:${TAG} \
+                            --destination=${REGISTRY}/${IMAGE}:${VERSION} \
+                            --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
+                            --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
+                            '''
+                            buildCompleted = true
+                        } catch (Exception e) {
+                            buildCompleted = false
+                        }
                     }
                 }
             }
