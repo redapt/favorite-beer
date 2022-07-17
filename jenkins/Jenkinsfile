@@ -96,12 +96,12 @@ spec:
                                 changeRequest target: 'master'
                                 changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
                             }
-                            //allOf { 
-                            //    not {
-                            //        changeRequest()
-                            //    }
-                            //    branch 'release'
-                            //}
+                            allOf { 
+                                not {
+                                    changeRequest()
+                                }
+                                branch 'release'
+                            }
                             allOf { 
                                 not {
                                     changeRequest()
