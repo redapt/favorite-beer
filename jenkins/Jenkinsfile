@@ -99,6 +99,7 @@ spec:
                         TAG             = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
                         VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
@@ -208,10 +209,11 @@ spec:
                         IMAGE           = "${params.IMAGE}"
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
                     }
                     steps {
                         container('tools'){               
-                            echo "Tag Source Branch ${CHANGE_BRANCH:=$BRANCH_NAME} and Set Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} [skip ci]"
+                            echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} [skip ci]"
 
                         }
                     }
