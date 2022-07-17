@@ -6,14 +6,23 @@ def isMergeCommit(String commit) {
   return isSimpleCommit == "0"
 }
 
-def buildSuffix(String branch) {
+def buildSuffix(String branch, String version) {
   if(branch == "develop"){
+    if(version =~ /.*-dev/){
+        return ""
+    }
     return "-dev"
   }
   if(branch == "release"){
+    if(version =~ /.*-rc/){
+        return ""
+    }
     return "-rc"
   }
   if("${branch}" =~ /hotfix.*/){
+    if(version =~ /.*-hotfix/){
+        return ""
+    }
     return "-hotfix"
   }
   return ""
@@ -202,33 +211,24 @@ spec:
                     }
                     steps {
 
-                        container('jnlp'){               
+                        container('tools'){               
                             echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_CANDIDATE} [skip ci]"
-
-                            withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
-                                sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
-                                sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
-                                sh "git fetch origin release"
-                                sh "git checkout ${VERSION_BRANCH}"
-                                sh "echo ${VERSION_CANDIDATE} > VERSION"
-                                sh "git add VERSION"
-                                sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
-                                sh "git remote set-url origin https://${PAT}@github.com/redapt/favorite-beer.git"
-                                sh "git push origin ${VERSION_BRANCH}"
+                            script {
+                                if("${VERSION_CANDIDATE" != "${VERSION}"){
+                                    withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
+                                        sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
+                                        sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
+                                        sh "git fetch origin release"
+                                        sh "git checkout ${VERSION_BRANCH}"
+                                        sh "echo ${VERSION_CANDIDATE} > VERSION"
+                                        sh "git add VERSION"
+                                        sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
+                                        sh "git remote set-url origin https://${PAT}@github.com/redapt/favorite-beer.git"
+                                        sh "git push origin ${VERSION_BRANCH}"
+                                    }
+                                }
                             }
-
                         }
-
-                        //container('tools'){
-                        //    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
-                        //    sh "tar xvf yq_linux_amd64.tar.gz"
-                        //    sh "mv yq_linux_amd64 /usr/bin/yq"
-                        
-                        //    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
-                        //    sh "./jenkins/scripts/bump_release_version.sh"
-                        
-                        //}
-
                     }
                 }  
 
