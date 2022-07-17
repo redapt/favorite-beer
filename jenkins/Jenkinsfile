@@ -61,15 +61,16 @@ spec:
                 REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
+                SHA_TAG         = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
             }
             steps {
-                container('tools'){
+                //container('tools'){
                 //    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
                 //    sh "tar xvf yq_linux_amd64.tar.gz"
                 //    sh "mv yq_linux_amd64 /usr/bin/yq"
                 //
-                    sh "git rev-parse HEAD > SHA_TAG"
                 //    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
                 //    sh "./jenkins/scripts/bump_release_version.sh"
                 //    
@@ -79,13 +80,13 @@ spec:
                         try {
                             sh '''#!/busybox/sh
                             TAG=$(cat SHA_TAG)
-                            VERSION_ALT="${VERSION}-rc${BUILD_NUMBER}"
+                            VERSION_ALT="${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
 
                             /kaniko/executor \
                             --context=dir://${CONTEXT} \
                             --dockerfile=${DOCKERFILE} \
                             --destination=${REGISTRY}/${IMAGE}:${TAG} \
-                            --destination=${REGISTRY}/${IMAGE}:${VERSION} \
+                            --destination=${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX} \
                             --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
                             --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
                             '''
@@ -112,10 +113,11 @@ spec:
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
                 VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
             }
             steps {
                 container('tools'){               
-                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-rc${BUILD_NUMBER} to Dev Environment"
+                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Dev Environment"
                 }
             }
         }
@@ -142,10 +144,11 @@ spec:
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
                 VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
             }
             steps {
                 container('tools'){               
-                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-rc${BUILD_NUMBER} to Test Environment"
+                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Test Environment"
                 }
             }
         }
@@ -164,10 +167,11 @@ spec:
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
                 VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
             }
             steps {
                 container('tools'){               
-                    echo "Tag Release Candidate Version: ${VERSION}-rc${BUILD_NUMBER}"
+                    echo "Tag Release Candidate Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                 }
             }
         }  
@@ -186,10 +190,11 @@ spec:
                 IMAGE           = 'favorite-beer'
                 LATEST_TAG      = 'latest'
                 VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
             }
             steps {
                 container('tools'){               
-                    echo "Tag Hotfix Version: ${VERSION}-hotfix${BUILD_NUMBER}"
+                    echo "Tag Hotfix Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                 }
             }
         }  
