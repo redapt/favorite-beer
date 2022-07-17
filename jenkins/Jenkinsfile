@@ -1,5 +1,11 @@
 def buildCompleted = false
 
+def isMergeCommit(String commit) {
+  isSimpleCommit = sh(returnStdout: true,
+      script: "set +e; git rev-parse --verify -q $commit^2 > /dev/null; echo \$?").trim()
+  return isSimpleCommit == "0"
+}
+
 pipeline {
     agent {
         kubernetes {
@@ -33,6 +39,7 @@ spec:
     stages {
         stage('Build Image') {
             when {
+                environment name: 'ExecuteAction', value: 'plan'
                 anyOf {
                     allOf { 
                         changeRequest target: 'master'
@@ -44,6 +51,9 @@ spec:
                     allOf { 
                         not {
                             changeRequest()
+                            expression {
+                                isMergeCommit(env.GIT_COMMIT)
+                            }
                         }
                         branch 'release'
                     }
