@@ -3,7 +3,9 @@ def buildCompleted = false
 def isMergeCommit(String commit) {
   isSimpleCommit = sh(returnStdout: true,
       script: "set +e; git rev-parse --verify -q $commit^2 > /dev/null; echo \$?").trim()
-  return isSimpleCommit == "0"
+      retVal = isSimpleCommit == "0"
+      echo "retVal: ${retVal}"
+  return retVal
 }
 
 pipeline {
