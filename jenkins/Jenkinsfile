@@ -1,3 +1,5 @@
+def buildCompleted = false
+
 pipeline {
     agent {
         kubernetes {
@@ -29,7 +31,6 @@ spec:
         }
     }
     stages {
-        boolean buildCompleted = false
         stage('Build Image') {
             when {
                 anyOf {
