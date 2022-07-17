@@ -199,7 +199,6 @@ spec:
                     steps {
                         container('tools'){               
                             echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_CANDIDATE} [skip ci]"
-
                         }
                     }
                 }  
@@ -225,9 +224,9 @@ spec:
                         container('tools'){             
                             script {     
                                 if(buildCompleted){
-                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Stage Environment"
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER} to Stage Environment"
                                 } else if(env.CHANGE_BRANCH == 'release') {
-                                    echo "AFTER BUILD if PR was OPEN, Deploy ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER} to Stage Environment"
+                                    echo "AFTER BUILD if PR was already OPEN, Deploy ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER} to Stage Environment"
                                 }
                             }
                         }
@@ -249,7 +248,7 @@ spec:
                     }
                     steps {
                         container('tools'){      
-                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION} as ${IMAGE}:${VERSION} to Production Registry"           
+                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${IMAGE}:${VERSION} to Production Registry"           
                             echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
                             echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
                         }
