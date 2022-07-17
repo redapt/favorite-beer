@@ -244,7 +244,7 @@ spec:
                     }
                     environment {
                         VERSION_CANDIDATE = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION           = env.VERSION_CANDIDATE.substring(0, env.VERSION_CANDIDATE.indexOf('-'))
+                        VERSION           = env.VERSION_CANDIDATE.substring(0, env.VERSION_CANDIDATE.indexOf('-')) // This fails, if the suffix is not on the VERSION file, to determine Hotfix or Release
                     }
                     steps {
                         container('tools'){      
