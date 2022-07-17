@@ -205,7 +205,7 @@ spec:
                             echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_CANDIDATE} [skip ci]"
                             sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
                             sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
-                            sh "git config --global url.\"git@github.com:\".insteadOf"
+                            sh 'git config --global url."git@github.com:".insteadOf'
                             sh "git fetch origin release"
                             sh "git checkout ${VERSION_BRANCH}"
                             sh "echo ${VERSION_CANDIDATE} > VERSION"
