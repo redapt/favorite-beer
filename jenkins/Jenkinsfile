@@ -27,6 +27,10 @@ pipeline {
         string(name: 'IMAGE', defaultValue: 'favorite-beer', description: 'What should the built/deployed image be called? ex: favorite-beer')
 
         string(name: 'LATEST_TAG', defaultValue: 'latest', description: 'Do you want to override the latest tag? default: latest')
+
+        string(name: 'GIT_USER_EMAIL', defaultValue: 'no-reply@redapt.com', description: 'What email should be used when writing to github? default: no-reply@redapt.com')
+
+        string(name: 'GIT_USER_FULL_NAME', defaultValue: 'Jenkins', description: 'What is the name of the user, when writing to github? default: Jenkins')
     }
 
     agent {
@@ -200,6 +204,8 @@ spec:
                         container('tools'){               
                             echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_CANDIDATE} [skip ci]"
                             sh "echo ${VERSION_CANDIDATE} > VERSION"
+                            sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
+                            sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
                             sh "git add VERSION"
                             sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
                             sh "git push origin ${VERSION_BRANCH}"
