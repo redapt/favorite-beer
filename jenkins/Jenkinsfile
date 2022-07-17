@@ -6,7 +6,26 @@ def isMergeCommit(String commit) {
   return isSimpleCommit == "0"
 }
 
+def buildSuffix(String branch) {
+  if(branch == "develop"){
+    return "dev"
+  }
+  if(branch == "release"){
+    return "rc"
+  }
+  return "hotfix"
+}
+
 pipeline {
+
+    parameters {
+        string(name: 'REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com [Note: jenkins-kaniko should be within this registry at kaniko:latest]')
+
+        string(name: 'IMAGE', defaultValue: 'favorite-beer', description: 'What should the built/deployed image be called? ex: favorite-beer')
+
+        string(name: 'LATEST_TAG', defaultValue: 'latest', description: 'Do you want to override the latest tag? default: latest')
+    }
+
     agent {
         kubernetes {
             label 'kaniko'
@@ -22,7 +41,7 @@ spec:
     image: 'docker.io/jenkins/inbound-agent:4.3-4-alpine'
     args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
   - name: kaniko
-    image: 771502366784.dkr.ecr.us-east-2.amazonaws.com/kaniko:latest
+    image: ${params.REGISTRY}/kaniko:latest
     imagePullPolicy: Always
     command:
     - /busybox/cat
@@ -37,198 +56,238 @@ spec:
         }
     }
     stages {
-        stage('Build Image') {
+
+        stage('CICD') {
             when {
                 anyOf {
-                    allOf { 
-                        changeRequest target: 'master'
+                    expression {
+                        isMergeCommit(env.GIT_COMMIT)
+                    }
+                    not {
+                        changelog '\\[skip ci\\]'
+                    }
+                }
+            }
+            stages {
+                stage('Build Image') {
+                    when {
                         anyOf {
-                           changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
+                            allOf { 
+                                changeRequest target: 'master'
+                                changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
+                            }
+                            allOf { 
+                                not {
+                                    changeRequest()
+                                }
+                                branch 'release'
+                            }
+                            allOf { 
+                                not {
+                                    changeRequest()
+                                }
+                                branch 'develop'
+                            }
                         }
                     }
-                    allOf { 
-                        not {
-                            changeRequest()
-                        }
-                        // Need to exclude single commits, that are already in a PR.
-                        //not {
-                            //expression {
-                            //    isMergeCommit(env.GIT_COMMIT)
-                            //}
+                    environment {
+                        DOCKERFILE      = "Dockerfile"
+                        CONTEXT         = "./spa-react-netcore-redis/voting"
+                        REGISTRY        = "${params.REGISTRY}"
+                        IMAGE           = "${params.IMAGE}"
+                        LATEST_TAG      = "${params.LATEST_TAG}"
+                        TAG             = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
+                    }
+                    steps {
+                        //container('tools'){
+                        //    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
+                        //    sh "tar xvf yq_linux_amd64.tar.gz"
+                        //    sh "mv yq_linux_amd64 /usr/bin/yq"
+                        
+                        //    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
+                        //    sh "./jenkins/scripts/bump_release_version.sh"
+                        
                         //}
-                        branch 'release'
-                    }
-                    allOf { 
-                        not {
-                            changeRequest()
-                        }
-                        branch 'develop'
-                    }
-                }
-            }
-            environment {
-                DOCKERFILE      = "Dockerfile"
-                CONTEXT         = "./spa-react-netcore-redis/voting"
-                REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                IMAGE           = 'favorite-beer'
-                LATEST_TAG      = 'latest'
-                TAG             = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                VERSION_SUFFIX  = sh(script: 'if [[ -z "${CHANGE_BRANCH}" ]]; then echo -n ${BRANCH_NAME}; else echo -n ${CHANGE_BRANCH}; fi;', returnStdout: true).trim()
-                VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
-            }
-            steps {
-                //container('tools'){
-                //    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
-                //    sh "tar xvf yq_linux_amd64.tar.gz"
-                //    sh "mv yq_linux_amd64 /usr/bin/yq"
-                //
-                //    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
-                //    sh "./jenkins/scripts/bump_release_version.sh"
-                //    
-                //}
-                container(name: 'kaniko', shell: '/busybox/sh') {   
-                    script {
-                        try {
-                            sh '''#!/busybox/sh
-                            /kaniko/executor \
-                            --context=dir://${CONTEXT} \
-                            --dockerfile=${DOCKERFILE} \
-                            --destination=${REGISTRY}/${IMAGE}:${TAG} \
-                            --destination=${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX} \
-                            --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
-                            --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
-                            '''
-                            buildCompleted = true
-                        } catch (Exception e) {
-                            buildCompleted = false
+                        container(name: 'kaniko', shell: '/busybox/sh') {   
+                            script {
+                                try {
+                                    sh '''#!/busybox/sh
+                                    /kaniko/executor \
+                                    --context=dir://${CONTEXT} \
+                                    --dockerfile=${DOCKERFILE} \
+                                    --destination=${REGISTRY}/${IMAGE}:${TAG} \
+                                    --destination=${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX} \
+                                    --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
+                                    --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
+                                    '''
+                                    buildCompleted = true
+                                } catch (Exception e) {
+                                    buildCompleted = false
+                                }
+                            }
                         }
                     }
                 }
-            }
-        }
 
-        stage('Deploy: Dev') {
-            when {
-                allOf { 
-                    not {
-                        changeRequest()
-                    }
-                    branch 'develop'
-                }
-            }
-            environment {
-                REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                IMAGE           = 'favorite-beer'
-                LATEST_TAG      = 'latest'
-                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
-            }
-            steps {
-                container('tools'){               
-                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Dev Environment"
-                }
-            }
-        }
-
-        stage('Deploy: Test') {
-            when {
-                anyOf {
-                    allOf { 
-                        not {
-                            changeRequest()
+                stage('Deploy: Dev') {
+                    when {
+                        allOf { 
+                            not {
+                                changeRequest()
+                            }
+                            branch 'develop'
                         }
-                        branch 'release'
                     }
-                    allOf { 
-                        changeRequest target: 'master'
+                    environment {
+                        REGISTRY        = "${params.REGISTRY}"
+                        IMAGE           = "${params.IMAGE}"
+                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                        VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
+                    }
+                    steps {
+                        container('tools'){               
+                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Dev Environment"
+                        }
+                    }
+                }
+
+                stage('Deploy: Test') {
+                    when {
                         anyOf {
-                           changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
+                            allOf { 
+                                not {
+                                    changeRequest()
+                                }
+                                branch 'release'
+                            }
+                        }
+                    }
+                    environment {
+                        REGISTRY        = "${params.REGISTRY}"
+                        IMAGE           = "${params.IMAGE}"
+                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                    }
+                    steps {
+                        container('tools'){               
+                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Test Environment"
+                        }
+                    }
+                }
+
+                stage('Tag Release Candidate') {
+                    when {
+                        allOf { 
+                            not {
+                                changeRequest()
+                            }
+                            branch 'release'
+                        }
+                    }
+                    environment {
+                        REGISTRY        = "${params.REGISTRY}"
+                        IMAGE           = "${params.IMAGE}"
+                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                    }
+                    steps {
+                        container('tools'){               
+                            echo "Tag Release Candidate Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
+                        }
+                    }
+                }  
+
+                stage('Tag Hotfix') {
+                    when {
+                        allOf { 
+                            changeRequest target: 'master'
+                            anyOf {
+                               changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
+                            }
+                        }
+                    }
+                    environment {
+                        REGISTRY        = "${params.REGISTRY}"
+                        IMAGE           = "${params.IMAGE}"
+                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                    }
+                    steps {
+                        container('tools'){               
+                            echo "Tag Hotfix Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
+                        }
+                    }
+                }  
+
+                stage('Deploy: Stage') {
+                    when {
+                        anyOf {
+                            allOf { 
+                                changeRequest target: 'master'
+                                anyOf {
+                                   changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
+                                   changeRequest branch: 'release', comparator: 'REGEXP'
+                                }
+                            }
+                        }
+                    }
+                    environment {
+                        REGISTRY        = "${params.REGISTRY}"
+                        IMAGE           = "${params.IMAGE}"
+                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                    }
+                    steps {
+                        container('tools'){             
+                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Stage Environment"
+                        }
+                    }
+                }
+
+                stage('Deploy: Prod') {
+                    when {
+                        allOf { 
+                            not {
+                                changeRequest()
+                            }
+                            branch 'master'
+                        }
+                    }
+                    environment {
+                        REGISTRY        = "${params.REGISTRY}"
+                        IMAGE           = "${params.IMAGE}"
+                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                    }
+                    steps {
+                        container('tools'){      
+                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION} to Production Registry"           
+                            echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
+                            echo "Down-Merge Master into Release, bump Release version no suffix [skip ci]"
+
                         }
                     }
                 }
             }
-            environment {
-                REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                IMAGE           = 'favorite-beer'
-                LATEST_TAG      = 'latest'
-                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                VERSION_SUFFIX  = sh(script: 'if [[ -z "${CHANGE_BRANCH}" ]]; then echo -n ${BRANCH_NAME}; else echo -n ${CHANGE_BRANCH}; fi;', returnStdout: true).trim()
-            }
-            steps {
-                container('tools'){               
-                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Test Environment"
-                }
-            }
         }
 
-        stage('Tag Release Candidate') {
+        stage('Skip CI'){
             when {
-                allOf { 
-                    changeRequest target: 'master'
-                    anyOf {
-                       changeRequest branch: 'release', comparator: 'REGEXP'
-                    }
-                }
-            }
-            environment {
-                REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                IMAGE           = 'favorite-beer'
-                LATEST_TAG      = 'latest'
-                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                VERSION_SUFFIX  = sh(script: 'if [[ -z "${CHANGE_BRANCH}" ]]; then echo -n ${BRANCH_NAME}; else echo -n ${CHANGE_BRANCH}; fi;', returnStdout: true).trim()
-            }
-            steps {
-                container('tools'){               
-                    echo "Tag Release Candidate Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
-                }
-            }
-        }  
-
-        stage('Tag Hotfix') {
-            when {
-                allOf { 
-                    changeRequest target: 'master'
-                    anyOf {
-                       changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
-                    }
-                }
-            }
-            environment {
-                REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                IMAGE           = 'favorite-beer'
-                LATEST_TAG      = 'latest'
-                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                VERSION_SUFFIX  = sh(script: 'if [[ -z "${CHANGE_BRANCH}" ]]; then echo -n ${BRANCH_NAME}; else echo -n ${CHANGE_BRANCH}; fi;', returnStdout: true).trim()
-            }
-            steps {
-                container('tools'){               
-                    echo "Tag Hotfix Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
-                }
-            }
-        }  
-
-        stage('Deploy: Prod') {
-            when {
-                allOf { 
+                allOf{
                     not {
-                        changeRequest()
+                        expression {
+                            isMergeCommit(env.GIT_COMMIT)
+                        }
                     }
-                    branch 'master'
+                    changelog '\\[skip ci\\]'
                 }
             }
-            environment {
-                REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
-                IMAGE           = 'favorite-beer'
-                LATEST_TAG      = 'latest'
-                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-            }
             steps {
-                container('tools'){               
-                    echo "Promote ${REGISTRY}/${IMAGE}:${VERSION} to Prod Registry"
-                    echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
-                    echo "Down-Merge Master into Release, bump Release version no suffix [skip ci]"
-
+                script {
+                    currentBuild.result = 'ABORTED'
+                    return
                 }
             }
         }
