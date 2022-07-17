@@ -83,10 +83,10 @@ spec:
                         //    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
                         //    sh "tar xvf yq_linux_amd64.tar.gz"
                         //    sh "mv yq_linux_amd64 /usr/bin/yq"
-                        //
+                    
                         //    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
                         //    sh "./jenkins/scripts/bump_release_version.sh"
-                        //    
+           
                         //}
                         container(name: 'kaniko', shell: '/busybox/sh') {   
                             script {
