@@ -6,7 +6,7 @@ def isMergeCommit(String commit) {
   return isSimpleCommit == "0"
 }
 
-def buildSuffix(String branch, String version) {
+def buildSuffix(String branch) {
   if(branch == "develop"){
     if(version =~ /.*-dev/){
         return ""
