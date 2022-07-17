@@ -6,7 +6,7 @@ def isMergeCommit(String commit) {
   return isSimpleCommit == "0"
 }
 
-def buildSuffix(String branch) {
+def buildSuffix(String branch, String version) {
   if(branch == "develop"){
     if(version =~ /.*-dev/){
         return ""
@@ -93,7 +93,7 @@ spec:
                 VERSION           = sh(script: 'cat VERSION', returnStdout: true).trim()
                 LATEST_TAG        = "${params.LATEST_TAG}"
                 VERSION_BRANCH    = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
-                VERSION_SUFFIX    = buildSuffix("${VERSION_BRANCH}")
+                VERSION_SUFFIX    = buildSuffix("${VERSION_BRANCH}", "${VERSION}")
                 VERSION_CANDIDATE = "${VERSION}${VERSION_SUFFIX}"
                 VERSION_BUILD     = "${VERSION_CANDIDATE}-${BUILD_NUMBER}"
             }
