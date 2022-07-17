@@ -37,7 +37,18 @@ spec:
         }
     }
     stages {
-        stage('Skip CI Check') {
+        stage('Skip CI'){
+            when {
+                changelog '\\[skip ci\\]'
+            }
+            steps {
+                script {
+                    currentBuild.result = 'ABORTED'
+                    return
+                }
+            }
+        }
+        stage('CICD') {
             when {
                 not {
                     changelog '\\[skip ci\\]'
