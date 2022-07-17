@@ -121,7 +121,6 @@ spec:
                     environment {
                         REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                         IMAGE           = 'favorite-beer'
-                        LATEST_TAG      = 'latest'
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
                     }
@@ -152,7 +151,6 @@ spec:
                     environment {
                         REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                         IMAGE           = 'favorite-beer'
-                        LATEST_TAG      = 'latest'
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = sh(script: 'if [[ -z "${CHANGE_BRANCH}" ]]; then echo -n ${BRANCH_NAME}; else echo -n ${CHANGE_BRANCH}; fi;', returnStdout: true).trim()
                     }
@@ -175,7 +173,6 @@ spec:
                     environment {
                         REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                         IMAGE           = 'favorite-beer'
-                        LATEST_TAG      = 'latest'
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = sh(script: 'if [[ -z "${CHANGE_BRANCH}" ]]; then echo -n ${BRANCH_NAME}; else echo -n ${CHANGE_BRANCH}; fi;', returnStdout: true).trim()
                     }
@@ -198,7 +195,6 @@ spec:
                     environment {
                         REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                         IMAGE           = 'favorite-beer'
-                        LATEST_TAG      = 'latest'
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = sh(script: 'if [[ -z "${CHANGE_BRANCH}" ]]; then echo -n ${BRANCH_NAME}; else echo -n ${CHANGE_BRANCH}; fi;', returnStdout: true).trim()
                     }
@@ -221,7 +217,6 @@ spec:
                     environment {
                         REGISTRY        = '771502366784.dkr.ecr.us-east-2.amazonaws.com'
                         IMAGE           = 'favorite-beer'
-                        LATEST_TAG      = 'latest'
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                     }
                     steps {
