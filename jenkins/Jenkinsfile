@@ -214,7 +214,7 @@ spec:
                         container('tools'){               
                             echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_CANDIDATE} [skip ci]"
                             script {
-                                if("${VERSION_CANDIDATE" != "${VERSION}"){
+                                if("${VERSION_CANDIDATE}" != "${VERSION}"){
                                     withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
                                         sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
                                         sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
