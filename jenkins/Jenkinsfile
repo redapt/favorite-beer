@@ -206,7 +206,7 @@ spec:
                             sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
                             sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
                             sh "git config --global url.\"git@github.com:\".insteadOf"
-                            sh "git fetch"
+                            sh "git fetch origin release"
                             sh "git checkout ${VERSION_BRANCH}"
                             sh "echo ${VERSION_CANDIDATE} > VERSION"
                             sh "git add VERSION"
