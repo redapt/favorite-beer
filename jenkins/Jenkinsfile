@@ -148,8 +148,12 @@ spec:
                         VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
                     }
                     steps {
-                        container('tools'){               
-                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Dev Environment"
+                        container('tools'){           
+                            script {     
+                                if(buildCompleted){
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Dev Environment"
+                                }
+                            }
                         }
                     }
                 }
@@ -173,18 +177,30 @@ spec:
                     }
                     steps {
                         container('tools'){               
-                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Test Environment"
+                            script {     
+                                if(buildCompleted){
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Test Environment"
+                                }
+                            }
                         }
                     }
                 }
 
-                stage('Tag Release Candidate') {
+                stage('Tag Commit') {
                     when {
-                        allOf { 
-                            not {
-                                changeRequest()
+                        anyOf {
+                            allOf { 
+                                not {
+                                    changeRequest()
+                                }
+                                branch 'release'
                             }
-                            branch 'release'
+                            allOf { 
+                                changeRequest target: 'master'
+                                anyOf {
+                                   changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
+                                }
+                            }
                         }
                     }
                     environment {
@@ -195,29 +211,8 @@ spec:
                     }
                     steps {
                         container('tools'){               
-                            echo "Tag Release Candidate Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
-                        }
-                    }
-                }  
+                            echo "Tag Source Branch ${CHANGE_BRANCH:=$BRANCH_NAME} and Set Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} [skip ci]"
 
-                stage('Tag Hotfix') {
-                    when {
-                        allOf { 
-                            changeRequest target: 'master'
-                            anyOf {
-                               changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
-                            }
-                        }
-                    }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
-                    }
-                    steps {
-                        container('tools'){               
-                            echo "Tag Hotfix Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                         }
                     }
                 }  
@@ -242,7 +237,13 @@ spec:
                     }
                     steps {
                         container('tools'){             
-                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Stage Environment"
+                            script {     
+                                if(buildCompleted){
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Stage Environment"
+                                } else if(env.CHANGE_BRANCH == 'release') {
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION} to Stage Environment"
+                                }
+                            }
                         }
                     }
                 }
@@ -265,7 +266,7 @@ spec:
                         container('tools'){      
                             echo "Promote ${REGISTRY}/${IMAGE}:${VERSION} to Production Registry"           
                             echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
-                            echo "Down-Merge Master into Release, bump Release version no suffix [skip ci]"
+                            echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
 
                         }
                     }
