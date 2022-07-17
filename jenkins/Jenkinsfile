@@ -8,12 +8,15 @@ def isMergeCommit(String commit) {
 
 def buildSuffix(String branch) {
   if(branch == "develop"){
-    return "dev"
+    return "-dev"
   }
   if(branch == "release"){
-    return "rc"
+    return "-rc"
   }
-  return "hotfix"
+  if("${branch}" =~ /hotfix.*/){
+    return "-hotfix"
+  }
+  return ""
 }
 
 pipeline {
@@ -68,6 +71,19 @@ spec:
                     }
                 }
             }
+            environment {
+                DOCKERFILE        = "Dockerfile"
+                CONTEXT           = "./spa-react-netcore-redis/voting"
+                TAG               = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                REGISTRY          = "${params.REGISTRY}"
+                IMAGE             = "${params.IMAGE}"
+                VERSION           = sh(script: 'cat VERSION', returnStdout: true).trim()
+                LATEST_TAG        = "${params.LATEST_TAG}"
+                VERSION_BRANCH    = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
+                VERSION_SUFFIX    = buildSuffix("${VERSION_BRANCH}")
+                VERSION_CANDIDATE = "${VERSION}${VERSION_SUFFIX}"
+                VERSION_BUILD     = "${VERSION_CANDIDATE}-${BUILD_NUMBER}"
+            }
             stages {
                 stage('Build Image') {
                     when {
@@ -90,17 +106,6 @@ spec:
                             }
                         }
                     }
-                    environment {
-                        DOCKERFILE      = "Dockerfile"
-                        CONTEXT         = "./spa-react-netcore-redis/voting"
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        LATEST_TAG      = "${params.LATEST_TAG}"
-                        TAG             = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
-                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
-                    }
                     steps {
                         //container('tools'){
                         //    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
@@ -119,8 +124,8 @@ spec:
                                     --context=dir://${CONTEXT} \
                                     --dockerfile=${DOCKERFILE} \
                                     --destination=${REGISTRY}/${IMAGE}:${TAG} \
-                                    --destination=${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX} \
-                                    --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
+                                    --destination=${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} \
+                                    --destination=${REGISTRY}/${IMAGE}:${VERSION_BUILD} \
                                     --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
                                     '''
                                     buildCompleted = true
@@ -141,15 +146,13 @@ spec:
                             branch 'develop'
                         }
                     }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
-                    }
                     steps {
-                        container('tools'){               
-                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Dev Environment"
+                        container('tools'){           
+                            script {     
+                                if(buildCompleted){
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Dev Environment"
+                                }
+                            }
                         }
                     }
                 }
@@ -165,63 +168,46 @@ spec:
                             }
                         }
                     }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
-                    }
                     steps {
                         container('tools'){               
-                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Test Environment"
+                            script {     
+                                if(buildCompleted){
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Test Environment"
+                                }
+                            }
                         }
                     }
                 }
 
-                stage('Tag Release Candidate') {
+                stage('Tag Commit') {
                     when {
-                        allOf { 
-                            not {
-                                changeRequest()
+                        anyOf {
+                            allOf { 
+                                not {
+                                    changeRequest()
+                                }
+                                branch 'release'
                             }
-                            branch 'release'
+                            allOf { 
+                                changeRequest target: 'master'
+                                anyOf {
+                                   changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
+                                }
+                            }
                         }
-                    }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
                     }
                     steps {
                         container('tools'){               
-                            echo "Tag Release Candidate Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
+                            echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_CANDIDATE} [skip ci]"
                         }
                     }
                 }  
 
-                stage('Tag Hotfix') {
-                    when {
-                        allOf { 
-                            changeRequest target: 'master'
-                            anyOf {
-                               changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
-                            }
-                        }
-                    }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
-                    }
-                    steps {
-                        container('tools'){               
-                            echo "Tag Hotfix Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
-                        }
-                    }
-                }  
 
+
+                // Have an awkward state when release PR to master is updated, need to reconcile the version on Release, 
+                // BEFORE taking action on the PR. If/when I skip ci the version set after the build, the pull request would already have 
+                // been triggered by the additional commit to an open PR.. (May need a rule to close PR to master, if it needs more code.)
                 stage('Deploy: Stage') {
                     when {
                         anyOf {
@@ -234,15 +220,15 @@ spec:
                             }
                         }
                     }
-                    environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
-                    }
                     steps {
                         container('tools'){             
-                            echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Stage Environment"
+                            script {     
+                                if(buildCompleted){
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER} to Stage Environment"
+                                } else if(env.CHANGE_BRANCH == 'release') {
+                                    echo "AFTER BUILD if PR was already OPEN, Deploy ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER} to Stage Environment"
+                                }
+                            }
                         }
                     }
                 }
@@ -257,16 +243,14 @@ spec:
                         }
                     }
                     environment {
-                        REGISTRY        = "${params.REGISTRY}"
-                        IMAGE           = "${params.IMAGE}"
-                        VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
+                        VERSION_CANDIDATE = sh(script: 'cat VERSION', returnStdout: true).trim()
+                        VERSION           = env.VERSION_CANDIDATE.substring(0, env.VERSION_CANDIDATE.indexOf('-'))
                     }
                     steps {
                         container('tools'){      
-                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION} to Production Registry"           
+                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${IMAGE}:${VERSION} to Production Registry"           
                             echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
-                            echo "Down-Merge Master into Release, bump Release version no suffix [skip ci]"
-
+                            echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
                         }
                     }
                 }
