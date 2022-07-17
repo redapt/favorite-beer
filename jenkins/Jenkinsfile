@@ -3,9 +3,7 @@ def buildCompleted = false
 def isMergeCommit(String commit) {
   isSimpleCommit = sh(returnStdout: true,
       script: "set +e; git rev-parse --verify -q $commit^2 > /dev/null; echo \$?").trim()
-      retVal = isSimpleCommit == "0"
-      echo "retVal: ${retVal}"
-  return retVal
+  return isSimpleCommit == "0"
 }
 
 pipeline {
@@ -45,7 +43,6 @@ spec:
                     allOf { 
                         changeRequest target: 'master'
                         anyOf {
-                           changeRequest branch: 'release', comparator: 'REGEXP'
                            changeRequest branch: 'hotfix/.*', comparator: 'REGEXP'
                         }
                     }
@@ -53,11 +50,12 @@ spec:
                         not {
                             changeRequest()
                         }
-                        not {
-                            expression {
-                                isMergeCommit(env.GIT_COMMIT)
-                            }
-                        }
+                        // Need to exclude single commits, that are already in a PR.
+                        //not {
+                            //expression {
+                            //    isMergeCommit(env.GIT_COMMIT)
+                            //}
+                        //}
                         branch 'release'
                     }
                     allOf { 
