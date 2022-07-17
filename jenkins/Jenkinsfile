@@ -147,12 +147,13 @@ spec:
                         IMAGE           = "${params.IMAGE}"
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = sh(script: 'echo -n ${BRANCH_NAME}', returnStdout: true).trim()
+                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
                         container('tools'){           
                             script {     
                                 if(buildCompleted){
-                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Dev Environment"
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_ALT} to Dev Environment"
                                 }
                             }
                         }
@@ -175,12 +176,13 @@ spec:
                         IMAGE           = "${params.IMAGE}"
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
                         container('tools'){               
                             script {     
                                 if(buildCompleted){
-                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Test Environment"
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_ALT} to Test Environment"
                                 }
                             }
                         }
@@ -210,10 +212,11 @@ spec:
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
                         VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
+                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
                         container('tools'){               
-                            echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} [skip ci]"
+                            echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_ALT} [skip ci]"
 
                         }
                     }
@@ -236,12 +239,13 @@ spec:
                         IMAGE           = "${params.IMAGE}"
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
                         VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
+                        VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
                         container('tools'){             
                             script {     
                                 if(buildCompleted){
-                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER} to Stage Environment"
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_ALT} to Stage Environment"
                                 } else if(env.CHANGE_BRANCH == 'release') {
                                     echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION} to Stage Environment"
                                 }
