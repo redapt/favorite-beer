@@ -232,8 +232,6 @@ spec:
                     }
                 }  
 
-
-
                 // Have an awkward state when release PR to master is updated, need to reconcile the version on Release, 
                 // BEFORE taking action on the PR. If/when I skip ci the version set after the build, the pull request would already have 
                 // been triggered by the additional commit to an open PR.. (May need a rule to close PR to master, if it needs more code.)
