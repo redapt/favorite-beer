@@ -98,8 +98,8 @@ spec:
                         LATEST_TAG      = "${params.LATEST_TAG}"
                         TAG             = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                         VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION_SUFFIX  = buildSuffix(sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim())
-                        VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
+                        VERSION_BRANCH  = "${CHANGE_BRANCH:=$BRANCH_NAME}"
+                        VERSION_SUFFIX  = buildSuffix(${VERSION_BRANCH})
                         VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
                     }
                     steps {
