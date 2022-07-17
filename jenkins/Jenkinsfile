@@ -6,14 +6,23 @@ def isMergeCommit(String commit) {
   return isSimpleCommit == "0"
 }
 
-def buildSuffix(String branch) {
+def buildSuffix(String branch, String version) {
   if(branch == "develop"){
+    if(version =~ /.*-dev/){
+        return ""
+    }
     return "-dev"
   }
   if(branch == "release"){
+    if(version =~ /.*-rc/){
+        return ""
+    }
     return "-rc"
   }
   if("${branch}" =~ /hotfix.*/){
+    if(version =~ /.*-hotfix/){
+        return ""
+    }
     return "-hotfix"
   }
   return ""
@@ -27,6 +36,10 @@ pipeline {
         string(name: 'IMAGE', defaultValue: 'favorite-beer', description: 'What should the built/deployed image be called? ex: favorite-beer')
 
         string(name: 'LATEST_TAG', defaultValue: 'latest', description: 'Do you want to override the latest tag? default: latest')
+
+        string(name: 'GIT_USER_EMAIL', defaultValue: 'no-reply@redapt.com', description: 'What email should be used when writing to github? default: no-reply@redapt.com')
+
+        string(name: 'GIT_USER_FULL_NAME', defaultValue: 'Jenkins', description: 'What is the name of the user, when writing to github? default: Jenkins')
     }
 
     agent {
@@ -80,7 +93,7 @@ spec:
                 VERSION           = sh(script: 'cat VERSION', returnStdout: true).trim()
                 LATEST_TAG        = "${params.LATEST_TAG}"
                 VERSION_BRANCH    = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
-                VERSION_SUFFIX    = buildSuffix("${VERSION_BRANCH}")
+                VERSION_SUFFIX    = buildSuffix("${VERSION_BRANCH}", "${VERSION}")
                 VERSION_CANDIDATE = "${VERSION}${VERSION_SUFFIX}"
                 VERSION_BUILD     = "${VERSION_CANDIDATE}-${BUILD_NUMBER}"
             }
@@ -179,7 +192,7 @@ spec:
                     }
                 }
 
-                stage('Tag Commit') {
+                stage('VERSION Commit') {
                     when {
                         anyOf {
                             allOf { 
@@ -197,13 +210,27 @@ spec:
                         }
                     }
                     steps {
+
                         container('tools'){               
                             echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_CANDIDATE} [skip ci]"
+                            script {
+                                if("${VERSION_CANDIDATE}" != "${VERSION}"){
+                                    withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
+                                        sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
+                                        sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
+                                        sh "git fetch origin release"
+                                        sh "git checkout ${VERSION_BRANCH}"
+                                        sh "echo ${VERSION_CANDIDATE} > VERSION"
+                                        sh "git add VERSION"
+                                        sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
+                                        sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                        sh "git push origin ${VERSION_BRANCH}"
+                                    }
+                                }
+                            }
                         }
                     }
                 }  
-
-
 
                 // Have an awkward state when release PR to master is updated, need to reconcile the version on Release, 
                 // BEFORE taking action on the PR. If/when I skip ci the version set after the build, the pull request would already have 
@@ -244,7 +271,7 @@ spec:
                     }
                     environment {
                         VERSION_CANDIDATE = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION           = env.VERSION_CANDIDATE.substring(0, env.VERSION_CANDIDATE.indexOf('-'))
+                        VERSION           = env.VERSION_CANDIDATE.substring(0, env.VERSION_CANDIDATE.indexOf('-')) // This fails, if the suffix is not on the VERSION file, to determine Hotfix or Release
                     }
                     steps {
                         container('tools'){      
@@ -253,25 +280,6 @@ spec:
                             echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
                         }
                     }
-                }
-            }
-        }
-
-        stage('Skip CI'){
-            when {
-                allOf{
-                    not {
-                        expression {
-                            isMergeCommit(env.GIT_COMMIT)
-                        }
-                    }
-                    changelog '\\[skip ci\\]'
-                }
-            }
-            steps {
-                script {
-                    currentBuild.result = 'ABORTED'
-                    return
                 }
             }
         }
