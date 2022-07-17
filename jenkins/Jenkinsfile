@@ -8,12 +8,15 @@ def isMergeCommit(String commit) {
 
 def buildSuffix(String branch) {
   if(branch == "develop"){
-    return "dev"
+    return "-dev"
   }
   if(branch == "release"){
-    return "rc"
+    return "-rc"
   }
-  return "hotfix"
+  if("${branch}" =~ /hotfix.*/){
+    return "-hotfix"
+  }
+  return ""
 }
 
 pipeline {
@@ -69,16 +72,17 @@ spec:
                 }
             }
             environment {
-                DOCKERFILE      = "Dockerfile"
-                CONTEXT         = "./spa-react-netcore-redis/voting"
-                TAG             = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
-                REGISTRY        = "${params.REGISTRY}"
-                IMAGE           = "${params.IMAGE}"
-                VERSION         = sh(script: 'cat VERSION', returnStdout: true).trim()
-                LATEST_TAG      = "${params.LATEST_TAG}"
-                VERSION_BRANCH  = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
-                VERSION_SUFFIX  = buildSuffix("${VERSION_BRANCH}")
-                VERSION_ALT     = "${VERSION}-${VERSION_SUFFIX}${BUILD_NUMBER}"
+                DOCKERFILE        = "Dockerfile"
+                CONTEXT           = "./spa-react-netcore-redis/voting"
+                TAG               = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
+                REGISTRY          = "${params.REGISTRY}"
+                IMAGE             = "${params.IMAGE}"
+                VERSION           = sh(script: 'cat VERSION', returnStdout: true).trim()
+                LATEST_TAG        = "${params.LATEST_TAG}"
+                VERSION_BRANCH    = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
+                VERSION_SUFFIX    = buildSuffix("${VERSION_BRANCH}")
+                VERSION_CANDIDATE = "${VERSION}${VERSION_SUFFIX}"
+                VERSION_BUILD     = "${VERSION_CANDIDATE}-${BUILD_NUMBER}"
             }
             stages {
                 stage('Build Image') {
@@ -120,8 +124,8 @@ spec:
                                     --context=dir://${CONTEXT} \
                                     --dockerfile=${DOCKERFILE} \
                                     --destination=${REGISTRY}/${IMAGE}:${TAG} \
-                                    --destination=${REGISTRY}/${IMAGE}:${VERSION}-${VERSION_SUFFIX} \
-                                    --destination=${REGISTRY}/${IMAGE}:${VERSION_ALT} \
+                                    --destination=${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} \
+                                    --destination=${REGISTRY}/${IMAGE}:${VERSION_BUILD} \
                                     --destination=${REGISTRY}/${IMAGE}:${LATEST_TAG}
                                     '''
                                     buildCompleted = true
@@ -146,7 +150,7 @@ spec:
                         container('tools'){           
                             script {     
                                 if(buildCompleted){
-                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_ALT} to Dev Environment"
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Dev Environment"
                                 }
                             }
                         }
@@ -168,7 +172,7 @@ spec:
                         container('tools'){               
                             script {     
                                 if(buildCompleted){
-                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_ALT} to Test Environment"
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Test Environment"
                                 }
                             }
                         }
@@ -194,7 +198,7 @@ spec:
                     }
                     steps {
                         container('tools'){               
-                            echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_ALT} [skip ci]"
+                            echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_BUILD} [skip ci]"
 
                         }
                     }
@@ -216,7 +220,7 @@ spec:
                         container('tools'){             
                             script {     
                                 if(buildCompleted){
-                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_ALT} to Stage Environment"
+                                    echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Stage Environment"
                                 } else if(env.CHANGE_BRANCH == 'release') {
                                     echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION} to Stage Environment"
                                 }
