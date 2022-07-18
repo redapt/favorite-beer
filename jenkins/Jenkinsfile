@@ -57,6 +57,7 @@ spec:
     image: 'docker.io/jenkins/inbound-agent:4.3-4-alpine'
     args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
     securityContext:
+      runAsUser: 0
       capabilities:
         add:
           - "SYS_ADMIN"
