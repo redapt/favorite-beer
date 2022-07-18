@@ -90,7 +90,7 @@ spec:
                 TAG               = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 REGISTRY          = "${params.REGISTRY}"
                 IMAGE             = "${params.IMAGE}"
-                VERSION           = sh(script: 'cat VERSION', returnStdout: true).trim()
+                VERSION           = sh(script: './jenkins/scripts/nextver.sh current', returnStdout: true).trim()
                 LATEST_TAG        = "${params.LATEST_TAG}"
                 VERSION_BRANCH    = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
                 VERSION_SUFFIX    = buildSuffix("${VERSION_BRANCH}", "${VERSION}")
@@ -131,11 +131,7 @@ spec:
                         //container('tools'){
                         //    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
                         //    sh "tar xvf yq_linux_amd64.tar.gz"
-                        //    sh "mv yq_linux_amd64 /usr/bin/yq"
-                        
-                        //    sh "chmod +x ./jenkins/scripts/bump_release_version.sh"
-                        //    sh "./jenkins/scripts/bump_release_version.sh"
-                        
+                        //    sh "mv yq_linux_amd64 /usr/bin/yq"                        
                         //}
                         container(name: 'kaniko', shell: '/busybox/sh') {   
                             script {
@@ -232,11 +228,11 @@ spec:
                                         //sh "git tag $VERSION_BUILD"
                                         //sh "git push origin --tags"
 
-                                        //sh "echo ${VERSION_CANDIDATE} > VERSION"
-                                        //sh "git add VERSION"
-                                        //sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
-                                        //sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
-                                        //sh "git push origin ${VERSION_BRANCH}"
+                                        sh "echo ${VERSION_CANDIDATE} > VERSION"
+                                        sh "git add VERSION"
+                                        sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
+                                        sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                        sh "git push origin ${VERSION_BRANCH}"
                                     }
                                 }
                             }
@@ -282,14 +278,48 @@ spec:
                         }
                     }
                     environment {
-                        VERSION_CANDIDATE = sh(script: 'cat VERSION', returnStdout: true).trim()
-                        VERSION           = env.VERSION_CANDIDATE.substring(0, env.VERSION_CANDIDATE.indexOf('-')) // This fails, if the suffix is not on the VERSION file, to determine Hotfix or Release
+                        VERSION_CANDIDATE = sh(script: './jenkins/scripts/nextver.sh current', returnStdout: true).trim()
+                        VERSION           = sh(script: './jenkins/scripts/nextver.sh current-no-suffix', returnStdout: true).trim()
+                        NEXT_VERSION           = sh(script: './jenkins/scripts/nextver.sh patch-no-suffix', returnStdout: true).trim()
                     }
                     steps {
                         container('tools'){      
                             echo "Promote ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${IMAGE}:${VERSION} to Production Registry"           
                             echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
                             echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
+
+                            withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
+                                sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
+                                sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
+
+                                sh "git checkout ${VERSION_BRANCH}"
+                                sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+
+                                sh "echo -n ${VERSION} > VERSION"
+                                sh "git add VERSION"
+
+                                sh "git commit -m \"[skip ci] Tag and set master to ${VERSION}\""
+                                sh "git tag $VERSION"
+                                sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                sh "git push origin ${VERSION_BRANCH}" --tags
+
+                                sh "git fetch origin release"
+                                sh "git checkout release"
+                                sh "git merge master"
+                                sh "echo -n ${NEXT_VERSION}-rc > VERSION"
+                                sh "git add VERSION"
+                                sh "git commit -m \"[skip ci] Set release to ${NEXT_VERSION}\""
+                                sh "git push origin release"
+
+                                sh "git fetch origin develop"
+                                sh "git checkout develop"
+                                sh "git merge release"
+
+                                sh "git commit -m \"[skip ci] Set develop to ${NEXT_VERSION}\""
+                                sh "git push origin develop"
+
+                            }
+
                         }
                     }
                 }
