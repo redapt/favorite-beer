@@ -56,6 +56,13 @@ spec:
   - name: jnlp
     image: 'docker.io/jenkins/inbound-agent:4.3-4-alpine'
     args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
+    securityContext:
+      capabilities:
+        add:
+          - "SYS_ADMIN"
+          - "MKNOD"
+          - "SYS_CHROOT"
+          - "SETFCAP"
   - name: kaniko
     image: ${params.REGISTRY}/kaniko:latest
     imagePullPolicy: Always
@@ -67,19 +74,6 @@ spec:
     command:
     - cat
     tty: true
-  - name: podman
-    image: quay.io/podman/stable
-    command:
-    - sleep
-    args:
-    - infinity
-    securityContext:
-      capabilities:
-        add:
-          - "SYS_ADMIN"
-          - "MKNOD"
-          - "SYS_CHROOT"
-          - "SETFCAP"
 
   restartPolicy: Never
 """
@@ -115,10 +109,23 @@ spec:
 
                 stage('Pod Man Testing') {
                     steps {
-                        container(name: 'podman') {   
+                        container(name: 'jnlp') {   
                             script {
+                                sh 'apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.14/community podman'
+                                sh 'podman --version'
                                 sh 'podman info'
-                                sh 'podman images'
+
+                                sh '''
+                                    apk add --no-cache \
+                                            python3 \
+                                            py3-pip \
+                                        && pip3 install --upgrade pip \
+                                        && pip3 install --no-cache-dir \
+                                            awscli \
+                                        && rm -rf /var/cache/apk/*
+                                '''
+
+                                sh 'aws --version'
                             }
                         }
                     }
