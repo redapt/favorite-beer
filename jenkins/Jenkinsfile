@@ -98,14 +98,6 @@ spec:
                 VERSION_BUILD     = "${VERSION_CANDIDATE}-${BUILD_NUMBER}"
             }
             stages {
-                stage('Debug'){
-                    steps {
-                        container('tools'){           
-                            sh "git pull origin --tags"
-                            sh "git describe --tags ${TAG}"
-                        }
-                    }
-                }
                 stage('Build Image') {
                     when {
                         anyOf {
@@ -133,6 +125,7 @@ spec:
                         //    sh "tar xvf yq_linux_amd64.tar.gz"
                         //    sh "mv yq_linux_amd64 /usr/bin/yq"                        
                         //}
+
                         container(name: 'kaniko', shell: '/busybox/sh') {   
                             script {
                                 try {
@@ -313,8 +306,6 @@ spec:
                                 sh "git merge release"
                                 sh "git commit --allow-empty -m \"[skip ci] Set develop to ${NEXT_VERSION}\""
                                 sh "git push origin develop"
-
-
                             }
 
                         }
