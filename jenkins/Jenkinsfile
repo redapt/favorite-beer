@@ -225,8 +225,6 @@ spec:
                                         sh "git fetch origin release"
                                         sh "git checkout ${VERSION_BRANCH}"
                                         sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
-                                        //sh "git tag $VERSION_BUILD"
-                                        //sh "git push origin --tags"
 
                                         sh "echo ${VERSION_CANDIDATE} > VERSION"
                                         sh "git add VERSION"
@@ -300,7 +298,6 @@ spec:
 
                                 sh "git commit -m \"[skip ci] Tag and set master to ${VERSION}\""
                                 sh "git tag $VERSION"
-                                sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
                                 sh "git push origin ${VERSION_BRANCH} --tags"
 
                                 sh "git fetch origin release"
