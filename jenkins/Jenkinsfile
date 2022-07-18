@@ -114,7 +114,8 @@ spec:
                             script {
                                 sh 'apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.14/community podman'
                                 sh 'podman --version'
-                                sh 'podman --storage-driver=vfs info'
+                                sh 'podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins info'
+                                sh 'podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins pull hello-world'
 
                                 sh '''
                                     apk add --no-cache \
