@@ -67,6 +67,20 @@ spec:
     command:
     - cat
     tty: true
+  - name: podman
+    image: quay.io/podman/stable
+    command:
+    - sleep
+    args:
+    - infinity
+    securityContext:
+      capabilities:
+        add:
+          - "SYS_ADMIN"
+          - "MKNOD"
+          - "SYS_CHROOT"
+          - "SETFCAP"
+
   restartPolicy: Never
 """
         }
@@ -98,6 +112,18 @@ spec:
                 VERSION_BUILD     = "${VERSION_CANDIDATE}-${BUILD_NUMBER}"
             }
             stages {
+
+                stage('Build Image') {
+                    steps {
+                        container(name: 'podman') {   
+                            script {
+                                sh 'podman info'
+                                sh 'podman images'
+                            }
+                        }
+                    }
+                }
+
                 stage('Build Image') {
                     when {
                         anyOf {
@@ -215,14 +241,13 @@ spec:
                                     withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
                                         sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
                                         sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
-                                        sh "git fetch origin release"
-                                        sh "git checkout ${VERSION_BRANCH}"
                                         sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                        sh "git fetch origin ${VERSION_BRANCH}"
+                                        sh "git checkout ${VERSION_BRANCH}"
 
                                         sh "echo ${VERSION_CANDIDATE} > VERSION"
                                         sh "git add VERSION"
                                         sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
-                                        sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
                                         sh "git push origin ${VERSION_BRANCH}"
                                     }
                                 }
@@ -276,8 +301,8 @@ spec:
                         container('tools'){      
                             echo "Promote ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${IMAGE}:${VERSION} to Production Registry"           
                             echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
-                            echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
-
+                            
+                            //echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
                             withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
                                 sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
                                 sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
