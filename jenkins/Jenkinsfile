@@ -113,7 +113,7 @@ spec:
             }
             stages {
 
-                stage('Build Image') {
+                stage('Pod Man Testing') {
                     steps {
                         container(name: 'podman') {   
                             script {
