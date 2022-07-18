@@ -108,41 +108,41 @@ spec:
             }
             stages {
 
-                stage('Pod Man Testing') {
-                    steps {
-                        container(name: 'jnlp') {   
-                            script {
-                                sh 'apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.14/community podman'
-                                sh 'podman --version'
+//               stage('Pod Man Testing') {
+//                   steps {
+//                       container(name: 'jnlp') {   
+//                           script {
+//                               sh 'apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.14/community podman'
+//                               sh 'podman --version'
 
-                                sh 'podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins pull hello-world'
+//                               sh 'podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins pull hello-world'
 
-                                sh '''
-                                    apk add --no-cache \
-                                            python3 \
-                                            py3-pip \
-                                        && pip3 install --upgrade pip \
-                                        && pip3 install --no-cache-dir \
-                                            awscli \
-                                        && rm -rf /var/cache/apk/*
-                                '''
+//                               sh '''
+//                                   apk add --no-cache \
+//                                           python3 \
+//                                           py3-pip \
+//                                       && pip3 install --upgrade pip \
+//                                       && pip3 install --no-cache-dir \
+//                                           awscli \
+//                                       && rm -rf /var/cache/apk/*
+//                               '''
 
-                                sh 'aws --version'
+//                               sh 'aws --version'
 
-                                sh '''
-                                    aws ecr get-login-password --region us-east-2 | \
-                                      podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins login \
-                                        --username AWS \
-                                        --password-stdin \
-                                        ${REGISTRY}
+//                               sh '''
+//                                   aws ecr get-login-password --region us-east-2 | \
+//                                     podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins login \
+//                                       --username AWS \
+//                                       --password-stdin \
+//                                       ${REGISTRY}
 
-                                    podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins pull ${REGISTRY}/${IMAGE}:${LATEST_TAG}
-                                '''
+//                                   podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins pull ${REGISTRY}/${IMAGE}:${LATEST_TAG}
+//                               '''
 
-                            }
-                        }
-                    }
-                }
+//                           }
+//                       }
+//                   }
+//               }
 
                 stage('Build Image') {
                     when {
