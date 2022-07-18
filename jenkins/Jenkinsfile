@@ -289,9 +289,10 @@ spec:
                                 sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
                                 sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
 
+                                sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                sh "git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'"
                                 sh "git fetch origin release"
                                 sh "git fetch origin develop"
-                                sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
 
                                 sh "git checkout ${VERSION_BRANCH}"
                                 sh "echo -n ${VERSION} > VERSION"
@@ -300,7 +301,6 @@ spec:
                                 sh "git commit -m \"[skip ci] Tag and set master to ${VERSION}\""
                                 sh "git tag $VERSION"
                                 sh "git push origin ${VERSION_BRANCH} --tags"
-
 
                                 sh "git checkout release"
                                 sh "git merge master"
@@ -311,9 +311,9 @@ spec:
 
                                 sh "git checkout develop"
                                 sh "git merge release"
-
                                 sh "git commit -m \"[skip ci] Set develop to ${NEXT_VERSION}\""
                                 sh "git push origin develop"
+
 
                             }
 
