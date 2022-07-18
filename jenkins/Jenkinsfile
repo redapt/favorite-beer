@@ -114,7 +114,7 @@ spec:
                             script {
                                 sh 'apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.14/community podman'
                                 sh 'podman --version'
-                                sh 'podman info'
+                                sh 'podman --storage-driver=vfs info'
 
                                 sh '''
                                     apk add --no-cache \
