@@ -313,8 +313,6 @@ spec:
                                 sh "git merge release"
                                 sh "git commit --allow-empty -m \"[skip ci] Set develop to ${NEXT_VERSION}\""
                                 sh "git push origin develop"
-
-
                             }
 
                         }
