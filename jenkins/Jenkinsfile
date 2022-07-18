@@ -90,7 +90,7 @@ spec:
                 TAG               = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 REGISTRY          = "${params.REGISTRY}"
                 IMAGE             = "${params.IMAGE}"
-                VERSION           = sh(script: './jenkins/scripts/nextver.sh current', returnStdout: true).trim()
+                VERSION           = sh(script: './jenkins/scripts/nextver.sh current-no-suffix', returnStdout: true).trim()
                 LATEST_TAG        = "${params.LATEST_TAG}"
                 VERSION_BRANCH    = sh(script: 'echo ${CHANGE_BRANCH:=$BRANCH_NAME}', returnStdout: true).trim()
                 VERSION_SUFFIX    = buildSuffix("${VERSION_BRANCH}", "${VERSION}")
@@ -277,7 +277,6 @@ spec:
                     }
                     environment {
                         VERSION_CANDIDATE = sh(script: './jenkins/scripts/nextver.sh current', returnStdout: true).trim()
-                        VERSION           = sh(script: './jenkins/scripts/nextver.sh current-no-suffix', returnStdout: true).trim()
                         NEXT_VERSION           = sh(script: './jenkins/scripts/nextver.sh patch-no-suffix', returnStdout: true).trim()
                     }
                     steps {
