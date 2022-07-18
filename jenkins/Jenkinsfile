@@ -306,12 +306,12 @@ spec:
                                 sh "git merge master"
                                 sh "echo -n ${NEXT_VERSION} > VERSION"
                                 sh "git add VERSION"
-                                sh "git commit -m \"[skip ci] Set release to ${NEXT_VERSION}\""
+                                sh "git commit --allow-empty -m \"[skip ci] Set release to ${NEXT_VERSION}\""
                                 sh "git push origin release"
 
                                 sh "git checkout develop"
                                 sh "git merge release"
-                                sh "git commit -m \"[skip ci] Set develop to ${NEXT_VERSION}\""
+                                sh "git commit --allow-empty -m \"[skip ci] Set develop to ${NEXT_VERSION}\""
                                 sh "git push origin develop"
 
 
