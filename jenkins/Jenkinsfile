@@ -299,7 +299,8 @@ spec:
                                 sh "git tag $VERSION"
                                 sh "git push origin ${VERSION_BRANCH} --tags"
 
-                                sh "git fetch origin release"
+                                sh "git fetch"
+                                
                                 sh "git checkout release"
                                 sh "git merge master"
                                 sh "echo -n ${NEXT_VERSION} > VERSION"
@@ -307,7 +308,6 @@ spec:
                                 sh "git commit -m \"[skip ci] Set release to ${NEXT_VERSION}\""
                                 sh "git push origin release"
 
-                                sh "git fetch origin develop"
                                 sh "git checkout develop"
                                 sh "git merge release"
 
