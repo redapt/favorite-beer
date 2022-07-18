@@ -98,6 +98,14 @@ spec:
                 VERSION_BUILD     = "${VERSION_CANDIDATE}-${BUILD_NUMBER}"
             }
             stages {
+                stage('Debug'){
+                    steps {
+                        container('tools'){           
+                            sh "git pull origin --tags"
+                            sh "git describe --tags ${TAG}"
+                        }
+                    }
+                }
                 stage('Build Image') {
                     when {
                         anyOf {
@@ -220,11 +228,15 @@ spec:
                                         sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
                                         sh "git fetch origin release"
                                         sh "git checkout ${VERSION_BRANCH}"
-                                        sh "echo ${VERSION_CANDIDATE} > VERSION"
-                                        sh "git add VERSION"
-                                        sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
                                         sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
-                                        sh "git push origin ${VERSION_BRANCH}"
+                                        //sh "git tag $VERSION_BUILD"
+                                        //sh "git push origin --tags"
+
+                                        //sh "echo ${VERSION_CANDIDATE} > VERSION"
+                                        //sh "git add VERSION"
+                                        //sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
+                                        //sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                        //sh "git push origin ${VERSION_BRANCH}"
                                     }
                                 }
                             }
