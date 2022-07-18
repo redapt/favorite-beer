@@ -98,6 +98,14 @@ spec:
                 VERSION_BUILD     = "${VERSION_CANDIDATE}-${BUILD_NUMBER}"
             }
             stages {
+                stage('Debug'){
+                    steps {
+                        container('tools'){           
+                            sh "git pull origin --tags"
+                            sh "git describe --tags $(git rev-parse HEAD)"
+                        }
+                    }
+                }
                 stage('Build Image') {
                     when {
                         anyOf {
