@@ -302,7 +302,7 @@ spec:
                                 sh "git fetch origin release"
                                 sh "git checkout release"
                                 sh "git merge master"
-                                sh "echo -n ${NEXT_VERSION}-rc > VERSION"
+                                sh "echo -n ${NEXT_VERSION} > VERSION"
                                 sh "git add VERSION"
                                 sh "git commit -m \"[skip ci] Set release to ${NEXT_VERSION}\""
                                 sh "git push origin release"
