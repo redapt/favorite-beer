@@ -114,7 +114,7 @@ spec:
                             script {
                                 sh 'apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.14/community podman'
                                 sh 'podman --version'
-                                sh 'podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins info'
+
                                 sh 'podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins pull hello-world'
 
                                 sh '''
@@ -128,6 +128,17 @@ spec:
                                 '''
 
                                 sh 'aws --version'
+
+                                sh '''
+                                    aws ecr get-login-password --region us-east-2 | \
+                                      podman login \
+                                        --username AWS \
+                                        --password-stdin \
+                                        ${REGISTRY}
+
+                                    podman pull ${REGISTRY}/${IMAGE}:${LATEST_TAG}
+                                '''
+
                             }
                         }
                     }
