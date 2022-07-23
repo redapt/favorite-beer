@@ -83,7 +83,7 @@ spec:
           - "SYS_CHROOT"
           - "SETFCAP"
       privileged: true
-      runAsUser: 1000
+      runAsUser: 0
     tty: true
 
   restartPolicy: Never
