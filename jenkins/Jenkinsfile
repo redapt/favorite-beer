@@ -126,7 +126,7 @@ spec:
                                 sh 'aws --version'
                                 sh '''
                                     aws ecr get-login-password --region us-east-2 | \
-                                      podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins login \
+                                      podman login \
                                         --username AWS \
                                         --password-stdin \
                                         ${REGISTRY}
