@@ -125,7 +125,7 @@ spec:
                                         --password-stdin \
                                         ${REGISTRY}
 
-                                    podman --runroot /home/jenkins/ --root /home/jenkins pull ${REGISTRY}/${IMAGE}:${LATEST_TAG}
+                                    podman pull ${REGISTRY}/${IMAGE}:${LATEST_TAG}
                                 '''
                             }
                         }
