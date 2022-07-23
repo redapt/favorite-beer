@@ -76,6 +76,12 @@ spec:
     command:
     - cat
     securityContext:
+      capabilities:
+        add:
+          - "SYS_ADMIN"
+          - "MKNOD"
+          - "SYS_CHROOT"
+          - "SETFCAP"
       privileged: true
       runAsUser: 1000
     tty: true
