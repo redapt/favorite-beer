@@ -58,7 +58,7 @@ spec:
   containers:
   - name: jnlp
     image: ${params.AGENT_REGISTRY}/jenkins-inbound-agent:4.3-4-alpine
-    args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
+    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
   - name: kaniko
     image: ${params.AGENT_REGISTRY}/kaniko:debug
     imagePullPolicy: Always

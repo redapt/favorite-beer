@@ -101,8 +101,8 @@ docker push $J8S_ARGO_TOOLS_REPOSITORY:$SOURCE_J8S_ARGO_TOOLS_TAG
 
 J8S_KANIKO_REPOSITORY=$(aws ecr describe-repositories --repository-names "${J8S_KANIKO_REPOSITORY_NAME}" --query "repositories[0].repositoryUri" --output text 2>/dev/null || \
            aws ecr create-repository --repository-name "${J8S_KANIKO_REPOSITORY_NAME}"  --query "repository.repositoryUri" --output text)
-mkdir -p ../tools/kaniko
-cd ../tools/kaniko
+mkdir -p agent/kaniko
+cd agent/kaniko
 cat > Dockerfile<<EOF
 FROM $SOURCE_J8S_KANIKO_REPOSITORY:$SOURCE_J8S_KANIKO_TAG
 COPY ./config.json /kaniko/.docker/config.json
@@ -124,8 +124,8 @@ docker push $J8S_KANIKO_REPOSITORY:$SOURCE_J8S_KANIKO_TAG
 
 J8S_PODMAN_REPOSITORY=$(aws ecr describe-repositories --repository-names "${J8S_PODMAN_REPOSITORY_NAME}" --query "repositories[0].repositoryUri" --output text 2>/dev/null || \
            aws ecr create-repository --repository-name "${J8S_PODMAN_REPOSITORY_NAME}"  --query "repository.repositoryUri" --output text)
-mkdir -p ../tools/podman-aws
-cd ../tools/podman-aws
+mkdir -p ../agent/podman-aws
+cd ../agent/podman-aws
 cat > Dockerfile<<EOF
 FROM $SOURCE_J8S_ALPINE_REPOSITORY:$SOURCE_J8S_ALPINE_TAG
 RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.14/community podman
