@@ -82,7 +82,6 @@ spec:
           - "MKNOD"
           - "SYS_CHROOT"
           - "SETFCAP"
-      privileged: true
       runAsUser: 0
     tty: true
 
