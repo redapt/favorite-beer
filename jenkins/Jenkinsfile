@@ -31,7 +31,10 @@ def buildSuffix(String branch, String version) {
 pipeline {
 
     parameters {
-        string(name: 'REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com [Note: jenkins-kaniko should be within this registry at kaniko:latest]')
+        string(name: 'AGENT_REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', 
+               description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com [Note: expecting jenkins-inbound-agent:4.3-4-alpine, kaniko:debug, argo-cd-ci-builder:v1.0.0, and podman-aws:latest to exist within this repository.]')
+        
+        string(name: 'REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com')
 
         string(name: 'IMAGE', defaultValue: 'favorite-beer', description: 'What should the built/deployed image be called? ex: favorite-beer')
 
@@ -44,18 +47,34 @@ pipeline {
 
     agent {
         kubernetes {
-            label 'kaniko'
+            label 'jenkins-build-agent'
             yaml """
 apiVersion: v1
 kind: Pod
 metadata:
-  name: kaniko
+  name: jenkins-build-agent
 spec:
   serviceAccountName: jenkins-sa-agent
   containers:
   - name: jnlp
-    image: 'docker.io/jenkins/inbound-agent:4.3-4-alpine'
-    args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
+    image: ${params.AGENT_REGISTRY}/jenkins-inbound-agent:4.3-4-alpine
+    args: ['$(JENKINS_SECRET)', '$(JENKINS_NAME)']
+  - name: kaniko
+    image: ${params.AGENT_REGISTRY}/kaniko:debug
+    imagePullPolicy: Always
+    command:
+    - /busybox/cat
+    tty: true
+  - name: argo-cd-ci-builder
+    image: ${params.AGENT_REGISTRY}/argo-cd-ci-builder:v1.0.0
+    command:
+    - cat
+    tty: true
+  - name: podman-aws
+    image: ${params.AGENT_REGISTRY}/podman-aws:latest
+    imagePullPolicy: Always
+    command:
+    - cat
     securityContext:
       runAsUser: 0
       capabilities:
@@ -64,16 +83,6 @@ spec:
           - "MKNOD"
           - "SYS_CHROOT"
           - "SETFCAP"
-  - name: kaniko
-    image: ${params.REGISTRY}/kaniko:latest
-    imagePullPolicy: Always
-    command:
-    - /busybox/cat
-    tty: true
-  - name: tools
-    image: argoproj/argo-cd-ci-builder:v1.0.0
-    command:
-    - cat
     tty: true
 
   restartPolicy: Never
@@ -108,41 +117,25 @@ spec:
             }
             stages {
 
-//               stage('Pod Man Testing') {
-//                   steps {
-//                       container(name: 'jnlp') {   
-//                           script {
-//                               sh 'apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.14/community podman'
-//                               sh 'podman --version'
+                stage('Pod Man Testing') {
+                    steps {
+                        container(name: 'podman-aws') {   
+                            script {
+                                sh 'podman --version'
+                                sh 'aws --version'
+                                sh '''
+                                    aws ecr get-login-password --region us-east-2 | \
+                                      podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins login \
+                                        --username AWS \
+                                        --password-stdin \
+                                        ${REGISTRY}
 
-//                               sh 'podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins pull hello-world'
-
-//                               sh '''
-//                                   apk add --no-cache \
-//                                           python3 \
-//                                           py3-pip \
-//                                       && pip3 install --upgrade pip \
-//                                       && pip3 install --no-cache-dir \
-//                                           awscli \
-//                                       && rm -rf /var/cache/apk/*
-//                               '''
-
-//                               sh 'aws --version'
-
-//                               sh '''
-//                                   aws ecr get-login-password --region us-east-2 | \
-//                                     podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins login \
-//                                       --username AWS \
-//                                       --password-stdin \
-//                                       ${REGISTRY}
-
-//                                   podman --storage-driver=vfs --runroot /home/jenkins/ --root /home/jenkins pull ${REGISTRY}/${IMAGE}:${LATEST_TAG}
-//                               '''
-
-//                           }
-//                       }
-//                   }
-//               }
+                                    podman --runroot /home/jenkins/ --root /home/jenkins pull ${REGISTRY}/${IMAGE}:${LATEST_TAG}
+                                '''
+                            }
+                        }
+                    }
+                }
 
                 stage('Build Image') {
                     when {
@@ -166,7 +159,7 @@ spec:
                         }
                     }
                     steps {
-                        //container('tools'){
+                        //container('argo-cd-ci-builder'){
                         //    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
                         //    sh "tar xvf yq_linux_amd64.tar.gz"
                         //    sh "mv yq_linux_amd64 /usr/bin/yq"                        
@@ -203,7 +196,7 @@ spec:
                         }
                     }
                     steps {
-                        container('tools'){           
+                        container('argo-cd-ci-builder'){           
                             script {     
                                 if(buildCompleted){
                                     echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Dev Environment"
@@ -225,7 +218,7 @@ spec:
                         }
                     }
                     steps {
-                        container('tools'){               
+                        container('argo-cd-ci-builder'){               
                             script {     
                                 if(buildCompleted){
                                     echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Test Environment"
@@ -254,7 +247,7 @@ spec:
                     }
                     steps {
 
-                        container('tools'){               
+                        container('argo-cd-ci-builder'){               
                             echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_CANDIDATE} [skip ci]"
                             script {
                                 if("${VERSION_CANDIDATE}" != "${VERSION}"){
@@ -292,7 +285,7 @@ spec:
                         }
                     }
                     steps {
-                        container('tools'){             
+                        container('argo-cd-ci-builder'){             
                             script {     
                                 if(buildCompleted){
                                     echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER} to Stage Environment"
@@ -318,7 +311,7 @@ spec:
                         NEXT_VERSION           = sh(script: './jenkins/scripts/nextver.sh patch-no-suffix', returnStdout: true).trim()
                     }
                     steps {
-                        container('tools'){      
+                        container('argo-cd-ci-builder'){      
                             echo "Promote ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${IMAGE}:${VERSION} to Production Registry"           
                             echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
                             
