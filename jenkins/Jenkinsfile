@@ -349,7 +349,6 @@ spec:
                         container(name: 'podman-aws') {   
                             echo "Promote ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${IMAGE}:${VERSION} to Production Registry" 
                             script {
-                                if(buildCompleted || env.CHANGE_BRANCH == 'release'){
                                     sh 'podman --version'
                                     sh 'aws --version'
                                     sh '''
@@ -360,10 +359,9 @@ spec:
                                             ${REGISTRY}
 
                                         podman pull ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}
-                                        podman tag ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} ${IMAGE}:${VERSION}
-                                        podman push ${IMAGE}:${VERSION}
+                                        podman tag ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} ${REGISTRY}/${IMAGE}:${VERSION}
+                                        podman push ${REGISTRY}/${IMAGE}:${VERSION}
                                     '''
-                                }
                             }
                         }
 
