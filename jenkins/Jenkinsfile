@@ -36,6 +36,8 @@ pipeline {
         
         string(name: 'REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com')
 
+        string(name: 'REGISTRY_REGION', defaultValue: 'us-east-2', description: 'What AWS region do we need to log into, for pushing our new builds? ex: us-east-2')
+
         string(name: 'IMAGE', defaultValue: 'favorite-beer', description: 'What should the built/deployed image be called? ex: favorite-beer')
 
         string(name: 'LATEST_TAG', defaultValue: 'latest', description: 'Do you want to override the latest tag? default: latest')
@@ -107,6 +109,7 @@ spec:
                 CONTEXT           = "./spa-react-netcore-redis/voting"
                 TAG               = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 REGISTRY          = "${params.REGISTRY}"
+                REGISTRY_REGION   = "${params.REGISTRY_REGION}"
                 IMAGE             = "${params.IMAGE}"
                 VERSION           = sh(script: './jenkins/scripts/nextver.sh current-no-suffix', returnStdout: true).trim()
                 LATEST_TAG        = "${params.LATEST_TAG}"
@@ -116,26 +119,6 @@ spec:
                 VERSION_BUILD     = "${VERSION_CANDIDATE}-${BUILD_NUMBER}"
             }
             stages {
-
-                stage('Pod Man Testing') {
-                    steps {
-                        container(name: 'podman-aws') {   
-                            script {
-                                sh 'podman --version'
-                                sh 'aws --version'
-                                sh '''
-                                    aws ecr get-login-password --region us-east-2 | \
-                                      podman login \
-                                        --username AWS \
-                                        --password-stdin \
-                                        ${REGISTRY}
-
-                                    podman pull ${REGISTRY}/${IMAGE}:${LATEST_TAG}
-                                '''
-                            }
-                        }
-                    }
-                }
 
                 stage('Build Image') {
                     when {
@@ -159,12 +142,6 @@ spec:
                         }
                     }
                     steps {
-                        //container('argo-cd-ci-builder'){
-                        //    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
-                        //    sh "tar xvf yq_linux_amd64.tar.gz"
-                        //    sh "mv yq_linux_amd64 /usr/bin/yq"                        
-                        //}
-
                         container(name: 'kaniko', shell: '/busybox/sh') {   
                             script {
                                 try {
@@ -200,11 +177,27 @@ spec:
                             script {     
                                 if(buildCompleted){
                                     echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Dev Environment"
+                                    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
+                                    sh "tar xvf yq_linux_amd64.tar.gz"
+                                    sh "mv yq_linux_amd64 /usr/bin/yq" 
+                                    withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
+                                        sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
+                                        sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
+                                        sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                        sh "git fetch origin ${VERSION_BRANCH}"
+                                        sh "git checkout ${VERSION_BRANCH}"
+
+                                        sh "yq eval -i '.image.tag = \"${VERSION_BUILD}\"' $CONTEXT/voting/k8s/Chart/values-aws-dev.yaml"
+                                        sh "git add $CONTEXT/voting/k8s/Chart/values-aws-dev.yaml"
+                                        sh "git commit -m \"[skip ci] Bump dev version to ${VERSION_BUILD}\""
+                                        sh "git push origin ${VERSION_BRANCH}"
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
 
                 stage('Deploy: Test') {
                     when {
@@ -271,7 +264,9 @@ spec:
 
                 // Have an awkward state when release PR to master is updated, need to reconcile the version on Release, 
                 // BEFORE taking action on the PR. If/when I skip ci the version set after the build, the pull request would already have 
-                // been triggered by the additional commit to an open PR.. (May need a rule to close PR to master, if it needs more code.)
+                // been triggered by the additional commit to an open PR.. (May need a rule to close PR to master, if it needs more code, or we
+                // need to add a step to check if this pipeline is firing directly from the release branch, and wait for the build on that branch's
+                // pipeline to succeed.)
                 stage('Deploy: Stage') {
                     when {
                         anyOf {
@@ -285,6 +280,28 @@ spec:
                         }
                     }
                     steps {
+
+                        container(name: 'podman-aws') {   
+                            echo "Tag ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER}"
+                            script {
+                                if(buildCompleted || env.CHANGE_BRANCH == 'release'){
+                                    sh 'podman --version'
+                                    sh 'aws --version'
+                                    sh '''
+                                        aws ecr get-login-password --region ${REGISTRY_REGION} | \
+                                          podman login \
+                                            --username AWS \
+                                            --password-stdin \
+                                            ${REGISTRY}
+
+                                        podman pull ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}
+                                        podman tag ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER}
+                                        podman push ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER}
+                                    '''
+                                }
+                            }
+                        }
+
                         container('argo-cd-ci-builder'){             
                             script {     
                                 if(buildCompleted){
@@ -311,8 +328,29 @@ spec:
                         NEXT_VERSION           = sh(script: './jenkins/scripts/nextver.sh patch-no-suffix', returnStdout: true).trim()
                     }
                     steps {
-                        container('argo-cd-ci-builder'){      
-                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${IMAGE}:${VERSION} to Production Registry"           
+
+                        container(name: 'podman-aws') {   
+                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${IMAGE}:${VERSION} to Production Registry" 
+                            script {
+                                if(buildCompleted || env.CHANGE_BRANCH == 'release'){
+                                    sh 'podman --version'
+                                    sh 'aws --version'
+                                    sh '''
+                                        aws ecr get-login-password --region ${REGISTRY_REGION} | \
+                                          podman login \
+                                            --username AWS \
+                                            --password-stdin \
+                                            ${REGISTRY}
+
+                                        podman pull ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}
+                                        podman tag ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} ${IMAGE}:${VERSION}
+                                        podman push ${IMAGE}:${VERSION}
+                                    '''
+                                }
+                            }
+                        }
+
+                        container('argo-cd-ci-builder'){                
                             echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
                             
                             //echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
