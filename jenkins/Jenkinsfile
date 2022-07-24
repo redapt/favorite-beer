@@ -31,7 +31,12 @@ def buildSuffix(String branch, String version) {
 pipeline {
 
     parameters {
-        string(name: 'REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com [Note: jenkins-kaniko should be within this registry at kaniko:latest]')
+        string(name: 'AGENT_REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', 
+               description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com [Note: expecting jenkins-inbound-agent:4.3-4-alpine, kaniko:debug, argo-cd-ci-builder:v1.0.0, and podman-aws:latest to exist within this repository.]')
+        
+        string(name: 'REGISTRY', defaultValue: '771502366784.dkr.ecr.us-east-2.amazonaws.com', description: 'What ECR does jenkins have access to for non production? ex: 771502366784.dkr.ecr.us-east-2.amazonaws.com')
+
+        string(name: 'REGISTRY_REGION', defaultValue: 'us-east-2', description: 'What AWS region do we need to log into, for pushing our new builds? ex: us-east-2')
 
         string(name: 'IMAGE', defaultValue: 'favorite-beer', description: 'What should the built/deployed image be called? ex: favorite-beer')
 
@@ -44,29 +49,44 @@ pipeline {
 
     agent {
         kubernetes {
-            label 'kaniko'
+            label 'jenkins-build-agent'
             yaml """
 apiVersion: v1
 kind: Pod
 metadata:
-  name: kaniko
+  name: jenkins-build-agent
 spec:
   serviceAccountName: jenkins-sa-agent
   containers:
   - name: jnlp
-    image: 'docker.io/jenkins/inbound-agent:4.3-4-alpine'
+    image: ${params.AGENT_REGISTRY}/jenkins-inbound-agent:4.3-4-alpine
     args: ['\$(JENKINS_SECRET)', '\$(JENKINS_NAME)']
   - name: kaniko
-    image: ${params.REGISTRY}/kaniko:latest
+    image: ${params.AGENT_REGISTRY}/kaniko:debug
     imagePullPolicy: Always
     command:
     - /busybox/cat
     tty: true
-  - name: tools
-    image: argoproj/argo-cd-ci-builder:v1.0.0
+  - name: argo-cd-ci-builder
+    image: ${params.AGENT_REGISTRY}/argo-cd-ci-builder:v1.0.0
     command:
     - cat
     tty: true
+  - name: podman-aws
+    image: ${params.AGENT_REGISTRY}/podman-aws:latest
+    imagePullPolicy: Always
+    command:
+    - cat
+    securityContext:
+      capabilities:
+        add:
+          - "SYS_ADMIN"
+          - "MKNOD"
+          - "SYS_CHROOT"
+          - "SETFCAP"
+      runAsUser: 0
+    tty: true
+
   restartPolicy: Never
 """
         }
@@ -89,6 +109,7 @@ spec:
                 CONTEXT           = "./spa-react-netcore-redis/voting"
                 TAG               = sh(script: 'git rev-parse HEAD', returnStdout: true).trim()
                 REGISTRY          = "${params.REGISTRY}"
+                REGISTRY_REGION   = "${params.REGISTRY_REGION}"
                 IMAGE             = "${params.IMAGE}"
                 VERSION           = sh(script: './jenkins/scripts/nextver.sh current-no-suffix', returnStdout: true).trim()
                 LATEST_TAG        = "${params.LATEST_TAG}"
@@ -98,6 +119,7 @@ spec:
                 VERSION_BUILD     = "${VERSION_CANDIDATE}-${BUILD_NUMBER}"
             }
             stages {
+
                 stage('Build Image') {
                     when {
                         anyOf {
@@ -120,12 +142,6 @@ spec:
                         }
                     }
                     steps {
-                        //container('tools'){
-                        //    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
-                        //    sh "tar xvf yq_linux_amd64.tar.gz"
-                        //    sh "mv yq_linux_amd64 /usr/bin/yq"                        
-                        //}
-
                         container(name: 'kaniko', shell: '/busybox/sh') {   
                             script {
                                 try {
@@ -157,15 +173,31 @@ spec:
                         }
                     }
                     steps {
-                        container('tools'){           
+                        container('argo-cd-ci-builder'){           
                             script {     
                                 if(buildCompleted){
                                     echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Dev Environment"
+                                    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
+                                    sh "tar xvf yq_linux_amd64.tar.gz"
+                                    sh "mv yq_linux_amd64 /usr/bin/yq" 
+                                    withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
+                                        sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
+                                        sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
+                                        sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                        sh "git fetch origin ${VERSION_BRANCH}"
+                                        sh "git checkout ${VERSION_BRANCH}"
+
+                                        sh "yq eval -i '.image.tag = \"${VERSION_BUILD}\"' $CONTEXT/voting/k8s/Chart/values-aws-dev.yaml"
+                                        sh "git add $CONTEXT/voting/k8s/Chart/values-aws-dev.yaml"
+                                        sh "git commit -m \"[skip ci] Bump dev version to ${VERSION_BUILD}\""
+                                        sh "git push origin ${VERSION_BRANCH}"
+                                    }
                                 }
                             }
                         }
                     }
                 }
+
 
                 stage('Deploy: Test') {
                     when {
@@ -179,10 +211,27 @@ spec:
                         }
                     }
                     steps {
-                        container('tools'){               
+                        container('argo-cd-ci-builder'){               
                             script {     
                                 if(buildCompleted){
                                     echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Test Environment"
+
+                                    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
+                                    sh "tar xvf yq_linux_amd64.tar.gz"
+                                    sh "mv yq_linux_amd64 /usr/bin/yq" 
+                                    withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
+                                        sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
+                                        sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
+                                        sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                        sh "git fetch origin ${VERSION_BRANCH}"
+                                        sh "git checkout ${VERSION_BRANCH}"
+
+                                        sh "yq eval -i '.image.tag = \"${VERSION_BUILD}\"' $CONTEXT/voting/k8s/Chart/values-aws-test.yaml"
+                                        sh "git add $CONTEXT/voting/k8s/Chart/values-aws-test.yaml"
+                                        sh "git commit -m \"[skip ci] Bump test version to ${VERSION_BUILD}\""
+                                        sh "git push origin ${VERSION_BRANCH}"
+                                    }
+
                                 }
                             }
                         }
@@ -208,21 +257,20 @@ spec:
                     }
                     steps {
 
-                        container('tools'){               
+                        container('argo-cd-ci-builder'){               
                             echo "Tag Source Branch ${VERSION_BRANCH} and Set Version: ${VERSION_CANDIDATE} [skip ci]"
                             script {
                                 if("${VERSION_CANDIDATE}" != "${VERSION}"){
                                     withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
                                         sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
                                         sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
-                                        sh "git fetch origin release"
-                                        sh "git checkout ${VERSION_BRANCH}"
                                         sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                        sh "git fetch origin ${VERSION_BRANCH}"
+                                        sh "git checkout ${VERSION_BRANCH}"
 
                                         sh "echo ${VERSION_CANDIDATE} > VERSION"
                                         sh "git add VERSION"
                                         sh "git commit -m \"[skip ci] Bump version to ${VERSION_CANDIDATE}\""
-                                        sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
                                         sh "git push origin ${VERSION_BRANCH}"
                                     }
                                 }
@@ -233,7 +281,9 @@ spec:
 
                 // Have an awkward state when release PR to master is updated, need to reconcile the version on Release, 
                 // BEFORE taking action on the PR. If/when I skip ci the version set after the build, the pull request would already have 
-                // been triggered by the additional commit to an open PR.. (May need a rule to close PR to master, if it needs more code.)
+                // been triggered by the additional commit to an open PR.. (May need a rule to close PR to master, if it needs more code, or we
+                // need to add a step to check if this pipeline is firing directly from the release branch, and wait for the build on that branch's
+                // pipeline to succeed.)
                 stage('Deploy: Stage') {
                     when {
                         anyOf {
@@ -247,7 +297,29 @@ spec:
                         }
                     }
                     steps {
-                        container('tools'){             
+
+                        container(name: 'podman-aws') {   
+                            echo "Tag ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER}"
+                            script {
+                                if(buildCompleted || env.CHANGE_BRANCH == 'release'){
+                                    sh 'podman --version'
+                                    sh 'aws --version'
+                                    sh '''
+                                        aws ecr get-login-password --region ${REGISTRY_REGION} | \
+                                          podman login \
+                                            --username AWS \
+                                            --password-stdin \
+                                            ${REGISTRY}
+
+                                        podman pull ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}
+                                        podman tag ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER}
+                                        podman push ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER}
+                                    '''
+                                }
+                            }
+                        }
+
+                        container('argo-cd-ci-builder'){             
                             script {     
                                 if(buildCompleted){
                                     echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}-${BRANCH_NAME}-${BUILD_NUMBER} to Stage Environment"
@@ -273,12 +345,36 @@ spec:
                         NEXT_VERSION           = sh(script: './jenkins/scripts/nextver.sh patch-no-suffix', returnStdout: true).trim()
                     }
                     steps {
-                        container('tools'){      
-                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${IMAGE}:${VERSION} to Production Registry"           
-                            echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
-                            echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
 
-                            withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
+                        container(name: 'podman-aws') {   
+                            echo "Promote ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} as ${IMAGE}:${VERSION} to Production Registry" 
+                            script {
+                                if(buildCompleted || env.CHANGE_BRANCH == 'release'){
+                                    sh 'podman --version'
+                                    sh 'aws --version'
+                                    sh '''
+                                        aws ecr get-login-password --region ${REGISTRY_REGION} | \
+                                          podman login \
+                                            --username AWS \
+                                            --password-stdin \
+                                            ${REGISTRY}
+
+                                        podman pull ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE}
+                                        podman tag ${REGISTRY}/${IMAGE}:${VERSION_CANDIDATE} ${IMAGE}:${VERSION}
+                                        podman push ${IMAGE}:${VERSION}
+                                    '''
+                                }
+                            }
+                        }
+
+                        container('argo-cd-ci-builder'){                
+                            echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
+                            
+                            sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
+                            sh "tar xvf yq_linux_amd64.tar.gz"
+                            sh "mv yq_linux_amd64 /usr/bin/yq" 
+                            withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {                        
+                                echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
                                 sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
                                 sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
 
@@ -290,8 +386,9 @@ spec:
                                 sh "git checkout ${VERSION_BRANCH}"
                                 sh "echo -n ${VERSION} > VERSION"
                                 sh "git add VERSION"
-
-                                sh "git commit -m \"[skip ci] Tag and set master to ${VERSION}\""
+                                sh "yq eval -i '.image.tag = \"${VERSION}\"' $CONTEXT/voting/k8s/Chart/values-aws-prod.yaml"
+                                sh "git add $CONTEXT/voting/k8s/Chart/values-aws-prod.yaml"
+                                sh "git commit -m \"[skip ci] Tag and set master and prod to ${VERSION}\""
                                 sh "git tag $VERSION"
                                 sh "git push origin ${VERSION_BRANCH} --tags"
 
