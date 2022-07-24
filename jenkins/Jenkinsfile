@@ -215,6 +215,23 @@ spec:
                             script {     
                                 if(buildCompleted){
                                     echo "Deploy ${REGISTRY}/${IMAGE}:${VERSION_BUILD} to Test Environment"
+
+                                    sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
+                                    sh "tar xvf yq_linux_amd64.tar.gz"
+                                    sh "mv yq_linux_amd64 /usr/bin/yq" 
+                                    withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
+                                        sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
+                                        sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
+                                        sh "git remote set-url origin https://$PAT@github.com/redapt/favorite-beer.git"
+                                        sh "git fetch origin ${VERSION_BRANCH}"
+                                        sh "git checkout ${VERSION_BRANCH}"
+
+                                        sh "yq eval -i '.image.tag = \"${VERSION_BUILD}\"' $CONTEXT/voting/k8s/Chart/values-aws-test.yaml"
+                                        sh "git add $CONTEXT/voting/k8s/Chart/values-aws-test.yaml"
+                                        sh "git commit -m \"[skip ci] Bump test version to ${VERSION_BUILD}\""
+                                        sh "git push origin ${VERSION_BRANCH}"
+                                    }
+
                                 }
                             }
                         }
@@ -353,8 +370,11 @@ spec:
                         container('argo-cd-ci-builder'){                
                             echo "Deploy ${IMAGE}:${VERSION} to Prod Environment"
                             
-                            //echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
-                            withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {
+                            sh "wget https://github.com/mikefarah/yq/releases/download/v4.9.6/yq_linux_amd64.tar.gz"
+                            sh "tar xvf yq_linux_amd64.tar.gz"
+                            sh "mv yq_linux_amd64 /usr/bin/yq" 
+                            withCredentials([usernamePassword(credentialsId: 'jenkins-gh-user', usernameVariable: 'USERNAME', passwordVariable: 'PAT')]) {                        
+                                echo "Down-Merge Master into Release, THEN bump Release version no suffix [skip ci]"
                                 sh "git config --global user.email \"${params.GIT_USER_EMAIL}\""
                                 sh "git config --global user.name \"${params.GIT_USER_FULL_NAME}\""
 
@@ -366,8 +386,9 @@ spec:
                                 sh "git checkout ${VERSION_BRANCH}"
                                 sh "echo -n ${VERSION} > VERSION"
                                 sh "git add VERSION"
-
-                                sh "git commit -m \"[skip ci] Tag and set master to ${VERSION}\""
+                                sh "yq eval -i '.image.tag = \"${VERSION}\"' $CONTEXT/voting/k8s/Chart/values-aws-prod.yaml"
+                                sh "git add $CONTEXT/voting/k8s/Chart/values-aws-prod.yaml"
+                                sh "git commit -m \"[skip ci] Tag and set master and prod to ${VERSION}\""
                                 sh "git tag $VERSION"
                                 sh "git push origin ${VERSION_BRANCH} --tags"
 
