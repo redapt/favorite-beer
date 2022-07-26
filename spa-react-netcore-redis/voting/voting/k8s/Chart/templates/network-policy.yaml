@@ -4,9 +4,7 @@ kind: NetworkPolicy
 metadata:
   name: {{ .Release.Name }}-default-deny-ingress
 spec:
-  podSelector:
-    matchLabels:
-      release: {{ .Release.Name }}
+  podSelector: {}
   policyTypes:
   - Ingress
   ingress: []
